@@ -1,6 +1,5 @@
 resource "aws_cognito_user_pool" "cognito_user_pool" {
-  // TODO add -use1 suffix
-  name = "${var.environment_name}-user-pool"
+  name = "${var.environment_name}-${var.service_name}-user-pool-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
 
   auto_verified_attributes = ["email"]
   mfa_configuration        = "OPTIONAL"
@@ -31,20 +30,20 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
 }
 
 resource "aws_cognito_user_group" "participants_cognito_user_group" {
-  name         = "${var.environment_name}-participants"
+  name         = "${var.environment_name}-${var.service_name}-participants-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
   description  = "Cognito user group to distinguish participant users"
   user_pool_id = aws_cognito_user_pool.cognito_user_pool.id
 }
 
 // TODO: do we need hosted domains?
 resource "aws_cognito_user_pool_domain" "cognito_user_pool_domain" {
-  domain       = "${var.environment_name}-pennsieve-users-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
+  domain       = "${var.environment_name}-${var.service_name}-pennsieve-users-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
   user_pool_id = aws_cognito_user_pool.cognito_user_pool.id
 }
 
 resource "aws_cognito_user_pool_client" "cognito_user_pool_client" {
   // TODO add -use1 suffix
-  name                         = "${var.environment_name}-app-client"
+  name                         = "${var.environment_name}-${var.service_name}-app-client-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
   user_pool_id                 = aws_cognito_user_pool.cognito_user_pool.id
   supported_identity_providers = ["COGNITO"]
   explicit_auth_flows          = ["ADMIN_NO_SRP_AUTH"]
@@ -59,8 +58,7 @@ resource "aws_cognito_user_pool_ui_customization" "cognito_ui_customization" {
 }
 
 resource "aws_cognito_user_pool" "cognito_token_pool" {
-  // TODO add -use1 suffix
-  name = "${var.environment_name}-token-pool"
+  name = "${var.environment_name}-${var.service_name}-token-pool-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
 
   mfa_configuration = "OFF"
 
@@ -86,19 +84,18 @@ resource "aws_cognito_user_pool" "cognito_token_pool" {
 }
 
 resource "aws_cognito_user_group" "tokens_cognito_user_group" {
-  name         = "${var.environment_name}-tokens"
+  name         = "${var.environment_name}-${var.service_name}-tokens-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
   user_pool_id = aws_cognito_user_pool.cognito_token_pool.id
 }
 
 // TODO: do we need hosted domains
 resource "aws_cognito_user_pool_domain" "cognito_token_pool_domain" {
-  domain       = "${var.environment_name}-pennsieve-tokens-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
+  domain       = "${var.environment_name}-${var.service_name}-pennsieve-tokens-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
   user_pool_id = aws_cognito_user_pool.cognito_token_pool.id
 }
 
 resource "aws_cognito_user_pool_client" "cognito_token_pool_client" {
-  // TODO add -use1 suffix
-  name                         = "${var.environment_name}-app-client"
+  name                         = "${var.environment_name}-${var.service_name}-app-client-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
   user_pool_id                 = aws_cognito_user_pool.cognito_token_pool.id
   supported_identity_providers = ["COGNITO"]
   explicit_auth_flows          = ["USER_PASSWORD_AUTH"]
