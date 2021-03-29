@@ -1,5 +1,5 @@
 resource "aws_cognito_user_pool" "cognito_user_pool" {
-  name = "${var.environment_name}-${var.service_name}-users-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
+  name = "${var.environment_name}-users-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
 
   auto_verified_attributes = ["email"]
   mfa_configuration        = "OPTIONAL"
@@ -35,7 +35,7 @@ resource "aws_cognito_user_pool_domain" "cognito_user_pool_domain" {
 }
 
 resource "aws_cognito_user_pool_client" "cognito_user_pool_client" {
-  name                         = "${var.environment_name}-${var.service_name}-users-app-client-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
+  name                         = "${var.environment_name}-users-app-client-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
   user_pool_id                 = aws_cognito_user_pool.cognito_user_pool.id
   supported_identity_providers = ["COGNITO"]
   explicit_auth_flows          = ["ADMIN_NO_SRP_AUTH"]
@@ -50,7 +50,7 @@ resource "aws_cognito_user_pool_ui_customization" "cognito_ui_customization" {
 }
 
 resource "aws_cognito_user_pool" "cognito_token_pool" {
-  name = "${var.environment_name}-${var.service_name}-client-tokens-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
+  name = "${var.environment_name}-client-tokens-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
 
   mfa_configuration = "OFF"
 
