@@ -54,7 +54,7 @@ resource "aws_cognito_user_pool_client" "cognito_user_pool_client" {
 
 resource "aws_cognito_user_pool_ui_customization" "cognito_ui_customization" {
   client_id    = aws_cognito_user_pool_client.cognito_user_pool_client.id
-  css          = file("cognito_ui.css")
+  css          = file("${path.module}/cognito_ui.css")
   user_pool_id = aws_cognito_user_pool_domain.cognito_user_pool_domain.user_pool_id
 }
 
