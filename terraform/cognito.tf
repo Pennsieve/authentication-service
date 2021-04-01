@@ -27,6 +27,10 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
   username_configuration {
     case_sensitive = false
   }
+
+  invite_message_template {
+    email_message = file("${path.module}/emails/new-account-creation.template.html")
+  }
 }
 
 resource "aws_cognito_user_pool_domain" "cognito_user_pool_domain" {
