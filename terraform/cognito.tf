@@ -16,7 +16,7 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
     allow_admin_create_user_only = true
 
     invite_message_template {
-      email_message = file("${path.module}/emails/new-account-email.template.html")
+      email_message = file("${path.module}/emails/new-account-creation.template.html")
     }
   }
 
