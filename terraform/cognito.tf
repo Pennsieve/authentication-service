@@ -5,6 +5,8 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
   mfa_configuration        = "OPTIONAL"
   username_attributes      = ["email"]
 
+  email_verification_message = file("${path.module}/emails/password-reset.template.html")
+
   account_recovery_setting {
     recovery_mechanism {
       name     = "verified_email"
