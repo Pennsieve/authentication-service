@@ -17,6 +17,8 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
 
     invite_message_template {
       email_message = file("${path.module}/emails/new-account-creation.template.html")
+      email_subject = "Welcome to Pennsieve - setup your account"
+      sms_message = "??????{####}{username}"
     }
   }
 
