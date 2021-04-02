@@ -46,7 +46,7 @@ resource "aws_cognito_user_pool_client" "cognito_user_pool_client" {
   supported_identity_providers = ["COGNITO"]
   explicit_auth_flows          = ["ADMIN_NO_SRP_AUTH"]
   read_attributes              = ["email"]
-  write_attributes             = ["email"]
+  write_attributes             = []
 }
 
 resource "aws_cognito_user_pool_ui_customization" "cognito_ui_customization" {
@@ -79,6 +79,34 @@ resource "aws_cognito_user_pool" "cognito_token_pool" {
   username_configuration {
     case_sensitive = false
   }
+
+  # TODO: make this attribute required, immutable
+
+  schema {
+    attribute_data_type      = "String"
+    developer_only_attribute = false
+    mutable                  = true
+    name                     = "organization_node_id"
+    required                 = false
+
+    string_attribute_constraints {
+      min_length = 1
+      max_length = 256
+    }
+  }
+
+  schema {
+    attribute_data_type      = "Number"
+    developer_only_attribute = false
+    mutable                  = true
+    name                     = "organization_id"
+    required                 = false
+
+    number_attribute_constraints {
+      min_value = 1
+      max_value = 1000000000
+    }
+  }
 }
 
 resource "aws_cognito_user_pool_client" "cognito_token_pool_client" {
@@ -86,4 +114,6 @@ resource "aws_cognito_user_pool_client" "cognito_token_pool_client" {
   user_pool_id                 = aws_cognito_user_pool.cognito_token_pool.id
   supported_identity_providers = ["COGNITO"]
   explicit_auth_flows          = ["USER_PASSWORD_AUTH"]
+  read_attributes              = []
+  write_attributes             = []
 }
