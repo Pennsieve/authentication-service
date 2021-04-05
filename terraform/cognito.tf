@@ -5,7 +5,7 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
   mfa_configuration        = "OPTIONAL"
   username_attributes      = ["email"]
 
-  email_verification_message = file("${path.module}/emails/password-reset.template.html")
+  email_verification_message = templatefile("${path.module}/emails/password-reset.template.html", { PENNSIEVE_DOMAIN = data.terraform_remote_state.account.outputs.domain_name })
 
   account_recovery_setting {
     recovery_mechanism {
@@ -18,7 +18,7 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
     allow_admin_create_user_only = true
 
     invite_message_template {
-      email_message = file("${path.module}/emails/new-account-creation.template.html")
+      email_message = templatefile("${path.module}/emails/new-account-creation.template.html", { PENNSIEVE_DOMAIN = data.terraform_remote_state.account.outputs.domain_name })
       email_subject = "Welcome to Pennsieve - setup your account"
       sms_message = "Please visit https://discover.pennsieve.net/invitation/accept?email={username}&tempPassword={####}"
     }
