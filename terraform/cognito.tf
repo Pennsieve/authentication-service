@@ -35,6 +35,14 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
   username_configuration {
     case_sensitive = false
   }
+
+  email_configuration {
+    email_sending_account = "DEVELOPER"
+    source_arn="arn:aws:ses:us-east-1:941165240011:identity/support@pennsieve.net"
+    from_email_address = "support@${data.terraform_remote_state.account.outputs.domain_name}"
+    reply_to_email_address = "support@${data.terraform_remote_state.account.outputs.domain_name}"
+  }
+
 }
 
 resource "aws_cognito_user_pool_domain" "cognito_user_pool_domain" {
