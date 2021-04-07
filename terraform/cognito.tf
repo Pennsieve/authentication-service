@@ -1,9 +1,23 @@
+module "ses_module" {
+  source = "git@github.com:Pennsieve/terraform-modules.git//ses/"
+
+  aws_account               = var.aws_account
+  domain_name               = data.terraform_remote_state.account.outputs.domain_name
+}
+
 resource "aws_cognito_user_pool" "cognito_user_pool" {
   name = "${var.environment_name}-users-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
 
   auto_verified_attributes = ["email"]
   mfa_configuration        = "OPTIONAL"
   username_attributes      = ["email"]
+
+  email_configuration {
+    email_sending_account = "DEVELOPER"
+    source_arn = module.ses_module.ses_domain_identity_arn
+    from_email_address = "support@${data.terraform_remote_state.account.outputs.domain_name}"
+    reply_to_email_address = "support@${data.terraform_remote_state.account.outputs.domain_name}"
+  }
 
   email_verification_message = templatefile("${path.module}/emails/password-reset.template.html", { PENNSIEVE_DOMAIN = data.terraform_remote_state.account.outputs.domain_name })
 
@@ -34,13 +48,6 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
 
   username_configuration {
     case_sensitive = false
-  }
-
-  email_configuration {
-    email_sending_account = "DEVELOPER"
-    source_arn="arn:aws:ses:us-east-1:941165240011:identity/support@pennsieve.net"
-    from_email_address = "support@${data.terraform_remote_state.account.outputs.domain_name}"
-    reply_to_email_address = "support@${data.terraform_remote_state.account.outputs.domain_name}"
   }
 
 }
