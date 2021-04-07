@@ -5,6 +5,13 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
   mfa_configuration        = "OPTIONAL"
   username_attributes      = ["email"]
 
+  email_configuration {
+    email_sending_account = "DEVELOPER"
+    source_arn = data.terraform_remote_state.region.outputs.ses_domain_identity_arn
+    from_email_address = data.terraform_remote_state.region.outputs.ses_mail_from_email_address
+    reply_to_email_address = data.terraform_remote_state.region.outputs.ses_reply_to_email_address
+  }
+
   email_verification_message = templatefile("${path.module}/emails/password-reset.template.html", { PENNSIEVE_DOMAIN = data.terraform_remote_state.account.outputs.domain_name })
 
   account_recovery_setting {
@@ -35,6 +42,7 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
   username_configuration {
     case_sensitive = false
   }
+
 }
 
 resource "aws_cognito_user_pool_domain" "cognito_user_pool_domain" {
