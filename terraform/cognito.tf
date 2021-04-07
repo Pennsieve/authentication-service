@@ -1,10 +1,3 @@
-module "ses_module" {
-  source = "git@github.com:Pennsieve/terraform-modules.git//ses/"
-
-  aws_account               = var.aws_account
-  domain_name               = data.terraform_remote_state.account.outputs.domain_name
-}
-
 resource "aws_cognito_user_pool" "cognito_user_pool" {
   name = "${var.environment_name}-users-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
 
@@ -14,7 +7,7 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
 
   email_configuration {
     email_sending_account = "DEVELOPER"
-    source_arn = module.ses_module.ses_domain_identity_arn
+    source_arn = data.terraform_remote_state.region.outputs.ses_domain_identity_arn
     from_email_address = "support@${data.terraform_remote_state.account.outputs.domain_name}"
     reply_to_email_address = "support@${data.terraform_remote_state.account.outputs.domain_name}"
   }
