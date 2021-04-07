@@ -8,7 +8,7 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
   email_configuration {
     email_sending_account = "DEVELOPER"
     source_arn = data.terraform_remote_state.region.outputs.ses_domain_identity_arn
-    from_email_address = data.terraform_remote_state.region.outputs.ses_reply_to_email_address
+    from_email_address = data.terraform_remote_state.region.outputs.ses_mail_from_email_address
     reply_to_email_address = data.terraform_remote_state.region.outputs.ses_reply_to_email_address
   }
 
