@@ -27,7 +27,7 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
     invite_message_template {
       email_message = templatefile("${path.module}/emails/new-account-creation.template.html", { PENNSIEVE_DOMAIN = data.terraform_remote_state.account.outputs.domain_name })
       email_subject = "Welcome to Pennsieve - setup your account"
-      sms_message = "Please visit https://app.${data.terraform_remote_state.account.outputs.domain_name}/invitation/accept?email={username}&tempPassword={####}"
+      sms_message = "Please visit https://app.${data.terraform_remote_state.account.outputs.domain_name}/invitation/accept/{username}/{####}"
     }
   }
 
