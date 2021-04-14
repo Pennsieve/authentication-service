@@ -5,6 +5,11 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
   mfa_configuration        = "OPTIONAL"
   username_attributes      = ["email"]
 
+  sms_configuration {
+    external_id    = "Pennsieve"
+    sns_caller_arn = var.sns_caller_arn
+  }
+
   email_configuration {
     email_sending_account = "DEVELOPER"
     source_arn = data.terraform_remote_state.region.outputs.ses_domain_identity_arn
