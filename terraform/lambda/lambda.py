@@ -1,11 +1,12 @@
 import os
+import urllib
 from string import Template
 
 def lambda_handler(event, context):
     with open("./new-account-creation.template.html") as file:
         fileContents = file.read()
 
-    code = event["request"]["codeParameter"]
+    code = urllib.parse.quote(event["request"]["codeParameter"], safe = "")
     username = event["request"]["usernameParameter"]
 
     template = Template(fileContents)
