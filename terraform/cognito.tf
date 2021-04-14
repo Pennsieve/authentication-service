@@ -1,3 +1,27 @@
+data "aws_iam_policy_document" "sns-policy" {
+  statement {
+    actions = [
+      "SNS:AddPermission",
+      "SNS:Publish",
+      "SNS:Receive",
+      "SNS:RemovePermission",
+      "SNS:Subscribe",
+    ]
+
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+  }
+}
+
+resource "aws_iam_role" "sns_role" {
+  name               = "sns_role"
+  assume_role_policy = data.aws_iam_policy_document.sns-policy.json
+}
+
 resource "aws_cognito_user_pool" "cognito_user_pool" {
   name = "${var.environment_name}-users-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
 
@@ -7,13 +31,13 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
 
   sms_configuration {
     external_id    = "Pennsieve"
-    sns_caller_arn = var.sns_caller_arn
+    sns_caller_arn = aws_iam_role.sns_role.arn
   }
 
   email_configuration {
-    email_sending_account = "DEVELOPER"
-    source_arn = data.terraform_remote_state.region.outputs.ses_domain_identity_arn
-    from_email_address = data.terraform_remote_state.region.outputs.ses_mail_from_email_address
+    email_sending_account  = "DEVELOPER"
+    source_arn             = data.terraform_remote_state.region.outputs.ses_domain_identity_arn
+    from_email_address     = data.terraform_remote_state.region.outputs.ses_mail_from_email_address
     reply_to_email_address = data.terraform_remote_state.region.outputs.ses_reply_to_email_address
   }
 
@@ -32,7 +56,7 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
     invite_message_template {
       email_message = templatefile("${path.module}/emails/new-account-creation.template.html", { PENNSIEVE_DOMAIN = data.terraform_remote_state.account.outputs.domain_name })
       email_subject = "Welcome to Pennsieve - setup your account"
-      sms_message = "Please visit https://app.${data.terraform_remote_state.account.outputs.domain_name}/invitation/accept/{username}/{####}"
+      sms_message   = "Please visit https://app.${data.terraform_remote_state.account.outputs.domain_name}/invitation/accept/{username}/{####}"
     }
   }
 
