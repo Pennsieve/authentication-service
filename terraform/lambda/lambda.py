@@ -1,4 +1,5 @@
 import urllib
+import os
 from string import Template
 
 def lambda_handler(event, _context):
@@ -11,15 +12,17 @@ def lambda_handler(event, _context):
     template = Template(file_contents)
     email_message = template.substitute({
         'code': code,
-        'username': username
+        'username': username,
+        'domain': os.environ.get("PENNSIEVE_DOMAIN")
     })
 
     sms_message_template = Template(
-        "Please visit https://app.pennsieve.net/invitation/accept/${username}/${code}"
+        "Please visit https://app.${domain}/invitation/accept/${username}/${code}"
     )
     sms_message = sms_message_template.substitute({
         'code': code,
-        'email': username
+        'username': username,
+        'domain': os.environ.get("PENNSIEVE_DOMAIN")
     })
 
     response = {
