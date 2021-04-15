@@ -12,7 +12,9 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
     reply_to_email_address = data.terraform_remote_state.region.outputs.ses_reply_to_email_address
   }
 
-  email_verification_message = templatefile("${path.module}/emails/password-reset.template.html", { PENNSIEVE_DOMAIN = data.terraform_remote_state.account.outputs.domain_name })
+  lambda_config {
+    custom_message = aws_lambda_function.cognito_custom_email_formatter.arn
+  }
 
   account_recovery_setting {
     recovery_mechanism {
@@ -23,12 +25,6 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
 
   admin_create_user_config {
     allow_admin_create_user_only = true
-
-    invite_message_template {
-      email_message = templatefile("${path.module}/emails/new-account-creation.template.html", { PENNSIEVE_DOMAIN = data.terraform_remote_state.account.outputs.domain_name })
-      email_subject = "Welcome to Pennsieve - setup your account"
-      sms_message = "Please visit https://app.${data.terraform_remote_state.account.outputs.domain_name}/invitation/accept/{username}/{####}"
-    }
   }
 
   device_configuration {

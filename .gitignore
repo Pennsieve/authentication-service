@@ -1,3 +1,4 @@
 **/*.swp
 **/.terraform/*
 .terraform.lock.hcl
+lambda.zip
