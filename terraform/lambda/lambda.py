@@ -6,8 +6,8 @@ def lambda_handler(event, _context):
     with open("./new-account-creation.template.html") as file:
         file_contents = file.read()
 
-    code = urllib.parse.quote(event["request"]["codeParameter"], safe = "")
-    username = event["request"]["usernameParameter"]
+    code = event["request"]["codeParameter"]
+    username = event["userName"]
 
     template = Template(file_contents)
     email_message = template.substitute({
@@ -25,10 +25,8 @@ def lambda_handler(event, _context):
         'domain': os.environ.get("PENNSIEVE_DOMAIN")
     })
 
-    response = {
-        "smsMessage": sms_message,
-        "emailSubject": "Welcome to Pennsieve - setup your account",
-        "emailMessage": email_message
-    }
+    event["response"]["smsMessage"] = sms_message
+    event["response"]["emailSubject"] = "Welcome to Pennsieve - setup your account"
+    event["response"]["emailMessage"] = email_message
 
-    return response
+    return event
