@@ -1,6 +1,6 @@
 resource "aws_lambda_function" "cognito_admin_create_user_email_format" {
   description       = "A description"
-  function_name     = "${var.environment_name}_cognito_invite_email_formatter_lambda_${data.terraform_remote_state.region.outputs.aws_region_shortname}"
+  function_name     = "${var.environment_name}-cognito-invite-email-formatter-lambda-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
   handler           = "lambda.lambda_handler"
   runtime           = "python3.8"
   role              = aws_iam_role.cognito_invite_email_role.arn
@@ -49,3 +49,4 @@ resource "aws_iam_role" "cognito_invite_email_role" {
 }
 EOF
 }
+

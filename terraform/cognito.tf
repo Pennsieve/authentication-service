@@ -12,8 +12,6 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
     reply_to_email_address = data.terraform_remote_state.region.outputs.ses_reply_to_email_address
   }
 
-  # email_verification_message = templatefile("${path.module}/emails/password-reset.template.html", { PENNSIEVE_DOMAIN = data.terraform_remote_state.account.outputs.domain_name })
-
   lambda_config {
     custom_message = aws_lambda_function.cognito_admin_create_user_email_format.arn
   }
