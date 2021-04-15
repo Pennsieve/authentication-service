@@ -13,7 +13,7 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
   }
 
   lambda_config {
-    custom_message = aws_lambda_function.cognito_admin_create_user_email_format.arn
+    custom_message = aws_lambda_function.cognito_custom_email_formatter.arn
   }
 
   account_recovery_setting {
