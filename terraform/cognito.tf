@@ -6,14 +6,14 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
   username_attributes      = ["email"]
 
   email_configuration {
-    email_sending_account = "DEVELOPER"
-    source_arn = data.terraform_remote_state.region.outputs.ses_domain_identity_arn
-    from_email_address = data.terraform_remote_state.region.outputs.ses_mail_from_email_address
+    email_sending_account  = "DEVELOPER"
+    source_arn             = data.terraform_remote_state.region.outputs.ses_domain_identity_arn
+    from_email_address     = data.terraform_remote_state.region.outputs.ses_mail_from_email_address
     reply_to_email_address = data.terraform_remote_state.region.outputs.ses_reply_to_email_address
   }
 
   lambda_config {
-    custom_message = aws_lambda_function.cognito_custom_email_formatter.arn
+    custom_message = aws_lambda_function.cognito_custom_message_lambda.arn
   }
 
   account_recovery_setting {
@@ -39,27 +39,42 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
     case_sensitive = false
   }
 
-}
-
-resource "aws_cognito_user_pool_domain" "cognito_user_pool_domain" {
-  domain       = aws_cognito_user_pool.cognito_user_pool.name
-  user_pool_id = aws_cognito_user_pool.cognito_user_pool.id
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_cognito_user_pool_client" "cognito_user_pool_client" {
-  name                         = "${var.environment_name}-users-app-client-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
-  user_pool_id                 = aws_cognito_user_pool.cognito_user_pool.id
-  supported_identity_providers = ["COGNITO"]
-  explicit_auth_flows          = ["ADMIN_NO_SRP_AUTH"]
-  read_attributes              = ["email"]
-  write_attributes             = []
+  name                          = "${var.environment_name}-users-app-client-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
+  user_pool_id                  = aws_cognito_user_pool.cognito_user_pool.id
+  supported_identity_providers  = ["COGNITO"]
+  prevent_user_existence_errors = "ENABLED"
+  explicit_auth_flows = [
+    "ALLOW_USER_PASSWORD_AUTH",
+    "ALLOW_USER_SRP_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH"
+  ]
+
+  # Set a single write attribute. Perversely, if this list is empty, then *all*
+  # attributes are writable.
+  write_attributes = ["name"]
+  read_attributes  = ["email"]
+
+  access_token_validity  = 60
+  id_token_validity      = 60
+  refresh_token_validity = 1
+
+  token_validity_units {
+    access_token  = "minutes"
+    id_token      = "minutes"
+    refresh_token = "days"
+  }
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
-resource "aws_cognito_user_pool_ui_customization" "cognito_ui_customization" {
-  client_id    = aws_cognito_user_pool_client.cognito_user_pool_client.id
-  css          = file("${path.module}/cognito_ui.css")
-  user_pool_id = aws_cognito_user_pool_domain.cognito_user_pool_domain.user_pool_id
-}
 
 resource "aws_cognito_user_pool" "cognito_token_pool" {
   name = "${var.environment_name}-client-tokens-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
@@ -75,23 +90,22 @@ resource "aws_cognito_user_pool" "cognito_token_pool" {
   }
 
   password_policy {
-    minimum_length    = 36
-    require_lowercase = false
-    require_numbers   = false
-    require_symbols   = false
-    require_uppercase = false
+    temporary_password_validity_days = 0
+    minimum_length                   = 36
+    require_lowercase                = false
+    require_numbers                  = false
+    require_symbols                  = false
+    require_uppercase                = false
   }
 
   username_configuration {
     case_sensitive = false
   }
 
-  # TODO: make this attribute required, immutable
-
   schema {
     attribute_data_type      = "String"
     developer_only_attribute = false
-    mutable                  = true
+    mutable                  = false
     name                     = "organization_node_id"
     required                 = false
 
@@ -104,7 +118,7 @@ resource "aws_cognito_user_pool" "cognito_token_pool" {
   schema {
     attribute_data_type      = "Number"
     developer_only_attribute = false
-    mutable                  = true
+    mutable                  = false
     name                     = "organization_id"
     required                 = false
 
@@ -113,13 +127,37 @@ resource "aws_cognito_user_pool" "cognito_token_pool" {
       max_value = 1000000000
     }
   }
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_cognito_user_pool_client" "cognito_token_pool_client" {
-  name                         = "${var.environment_name}-client-tokens-app-client-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
-  user_pool_id                 = aws_cognito_user_pool.cognito_token_pool.id
-  supported_identity_providers = ["COGNITO"]
-  explicit_auth_flows          = ["USER_PASSWORD_AUTH"]
-  read_attributes              = []
-  write_attributes             = []
+  name                          = "${var.environment_name}-client-tokens-app-client-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
+  user_pool_id                  = aws_cognito_user_pool.cognito_token_pool.id
+  supported_identity_providers  = ["COGNITO"]
+  prevent_user_existence_errors = "ENABLED"
+  explicit_auth_flows = [
+    "ALLOW_USER_PASSWORD_AUTH",
+    "ALLOW_USER_SRP_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH"
+  ]
+
+  write_attributes = ["name"]
+  read_attributes  = ["custom:organization_id", "custom:organization_node_id"]
+
+  access_token_validity  = 60
+  id_token_validity      = 60
+  refresh_token_validity = 1
+
+  token_validity_units {
+    access_token  = "minutes"
+    id_token      = "minutes"
+    refresh_token = "days"
+  }
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
