@@ -39,6 +39,9 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
     case_sensitive = false
   }
 
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_cognito_user_pool_client" "cognito_user_pool_client" {
@@ -46,7 +49,11 @@ resource "aws_cognito_user_pool_client" "cognito_user_pool_client" {
   user_pool_id                  = aws_cognito_user_pool.cognito_user_pool.id
   supported_identity_providers  = ["COGNITO"]
   prevent_user_existence_errors = "ENABLED"
-  explicit_auth_flows           = ["USER_PASSWORD_AUTH", "ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
+  explicit_auth_flows = [
+    "ALLOW_USER_PASSWORD_AUTH",
+    "ALLOW_USER_SRP_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH"
+  ]
 
   # Set a single write attribute. Perversely, if this list is empty, then *all*
   # attributes are writable.
@@ -61,6 +68,10 @@ resource "aws_cognito_user_pool_client" "cognito_user_pool_client" {
     access_token  = "minutes"
     id_token      = "minutes"
     refresh_token = "days"
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
@@ -93,10 +104,10 @@ resource "aws_cognito_user_pool" "cognito_token_pool" {
 
   schema {
     attribute_data_type      = "String"
-    developer_only_attribute = true
+    developer_only_attribute = false
     mutable                  = false
     name                     = "organization_node_id"
-    required                 = true
+    required                 = false
 
     string_attribute_constraints {
       min_length = 1
@@ -106,15 +117,19 @@ resource "aws_cognito_user_pool" "cognito_token_pool" {
 
   schema {
     attribute_data_type      = "Number"
-    developer_only_attribute = true
+    developer_only_attribute = false
     mutable                  = false
     name                     = "organization_id"
-    required                 = true
+    required                 = false
 
     number_attribute_constraints {
       min_value = 1
       max_value = 1000000000
     }
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
@@ -123,7 +138,11 @@ resource "aws_cognito_user_pool_client" "cognito_token_pool_client" {
   user_pool_id                  = aws_cognito_user_pool.cognito_token_pool.id
   supported_identity_providers  = ["COGNITO"]
   prevent_user_existence_errors = "ENABLED"
-  explicit_auth_flows           = ["USER_PASSWORD_AUTH", "ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
+  explicit_auth_flows = [
+    "ALLOW_USER_PASSWORD_AUTH",
+    "ALLOW_USER_SRP_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH"
+  ]
 
   write_attributes = ["name"]
   read_attributes  = ["custom:organization_id", "custom:organization_node_id"]
@@ -136,5 +155,9 @@ resource "aws_cognito_user_pool_client" "cognito_token_pool_client" {
     access_token  = "minutes"
     id_token      = "minutes"
     refresh_token = "days"
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }

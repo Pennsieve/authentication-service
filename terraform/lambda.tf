@@ -1,13 +1,13 @@
 resource "aws_lambda_function" "cognito_custom_email_formatter" {
-  description       = "A description"
-  function_name     = "${var.environment_name}-cognito-custom-message-email-formatter-lambda-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
-  handler           = "lambda.lambda_handler"
-  runtime           = "python3.8"
-  role              = aws_iam_role.cognito_custom_message_email_role.arn
-  timeout           = 3
-  memory_size       = 128
-  source_code_hash  = data.archive_file.lambda_archive.output_base64sha256
-  filename          = "${path.module}/lambda.zip"
+  description      = "A description"
+  function_name    = "${var.environment_name}-cognito-custom-message-email-formatter-lambda-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
+  handler          = "lambda.lambda_handler"
+  runtime          = "python3.8"
+  role             = aws_iam_role.cognito_custom_message_email_role.arn
+  timeout          = 3
+  memory_size      = 128
+  source_code_hash = data.archive_file.lambda_archive.output_base64sha256
+  filename         = "${path.module}/lambda.zip"
 
   environment {
     variables = {
