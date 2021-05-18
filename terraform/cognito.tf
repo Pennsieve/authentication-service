@@ -42,6 +42,18 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
   lifecycle {
     prevent_destroy = true
   }
+
+  schema {
+    name                     = "invite_path"
+    attribute_data_type      = "String"
+    developer_only_attribute = false
+    mutable                  = false
+    required                 = false
+    string_attribute_constraints {
+      min_length = 1
+      max_length = 256
+    }
+  }
 }
 
 resource "aws_cognito_user_pool_client" "cognito_user_pool_client" {
