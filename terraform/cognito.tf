@@ -54,6 +54,18 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
       max_length = 256
     }
   }
+  
+  schema {
+    name                     = "orcid"
+    attribute_data_type      = "String"
+    developer_only_attribute = false
+    mutable                  = true
+    required                 = false
+    string_attribute_constraints {
+      min_length = 1
+      max_length = 256
+    }
+  }
 }
 
 resource "aws_cognito_user_pool_client" "cognito_user_pool_client" {
