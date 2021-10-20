@@ -68,6 +68,24 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
   }
 }
 
+resource "aws_cognito_identity_provider" "orcid_identity_provider" {
+  user_pool_id = aws_cognito_user_pool.cognito_user_pool.id
+  
+  provider_name = "ORCID"
+  provider_type = "OIDC"
+  
+  provider_details = {
+    attributes_request_method = "GET"
+    authorize_scopes = "openid"
+    client_id = "APP-4FK9BTFUGZITFOAJ"
+    oidc_issuer = "https://sandbox.orcid.org"
+  }
+  
+//  attribute_mapping = {
+//    custom:orcid = "sub"
+//  }
+}
+
 resource "aws_cognito_user_pool_client" "cognito_user_pool_client" {
   name                          = "${var.environment_name}-users-app-client-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
   user_pool_id                  = aws_cognito_user_pool.cognito_user_pool.id
