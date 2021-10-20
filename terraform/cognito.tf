@@ -203,8 +203,8 @@ resource "aws_cognito_identity_provider" "orcid_identity_provider_2" {
 }
 
 resource "aws_cognito_user_pool_client" "cognito_user_pool_client_2" {
-  name                          = "${var.environment_name}-users-app-client-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
-  user_pool_id                  = aws_cognito_user_pool.cognito_user_pool.id
+  name                          = "${var.environment_name}-users2-app-client-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
+  user_pool_id                  = aws_cognito_user_pool.cognito_user_pool_2.id
   supported_identity_providers  = ["COGNITO"]
   prevent_user_existence_errors = "ENABLED"
   explicit_auth_flows = [
