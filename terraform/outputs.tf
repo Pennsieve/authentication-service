@@ -14,6 +14,18 @@ output "user_pool_admin_client_id" {
   value = aws_cognito_user_pool_client.cognito_user_pool_admin_client.id
 }
 
+output "user_pool_2_id" {
+  value = aws_cognito_user_pool.cognito_user_pool_2.id
+}
+
+output "user_pool_2_arn" {
+  value = aws_cognito_user_pool.cognito_user_pool_2.arn
+}
+
+output "user_pool_2_client_id" {
+  value = aws_cognito_user_pool_client.cognito_user_pool_client_2.id
+}
+
 output "token_pool_id" {
   value = aws_cognito_user_pool.cognito_token_pool.id
 }
