@@ -117,6 +117,38 @@ resource "aws_cognito_user_pool_client" "cognito_user_pool_client" {
   }
 }
 
+resource "aws_cognito_user_pool_client" "cognito_user_pool_admin_client" {
+  name                          = "${var.environment_name}-users-app-admin-client-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
+  user_pool_id                  = aws_cognito_user_pool.cognito_user_pool.id
+  supported_identity_providers  = ["COGNITO"]
+  prevent_user_existence_errors = "ENABLED"
+  explicit_auth_flows = [
+    "ALLOW_ADMIN_USER_PASSWORD_AUTH",
+    "ALLOW_USER_PASSWORD_AUTH",
+    "ALLOW_USER_SRP_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH"
+  ]
+
+  # Set a single write attribute. Perversely, if this list is empty, then *all*
+  # attributes are writable.
+  write_attributes = ["name"]
+  read_attributes  = ["email"]
+
+  access_token_validity  = 60
+  id_token_validity      = 60
+  refresh_token_validity = 1
+
+  token_validity_units {
+    access_token  = "minutes"
+    id_token      = "minutes"
+    refresh_token = "days"
+  }
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "aws_cognito_user_pool" "cognito_user_pool_2" {
   name = "${var.environment_name}-users2-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
 
