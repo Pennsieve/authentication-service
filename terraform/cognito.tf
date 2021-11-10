@@ -105,7 +105,8 @@ resource "aws_cognito_user_pool_client" "cognito_user_pool_admin_client" {
   supported_identity_providers  = ["COGNITO"]
   prevent_user_existence_errors = "ENABLED"
   explicit_auth_flows = [
-    "ALLOW_ADMIN_USER_PASSWORD_AUTH"
+    "ALLOW_ADMIN_USER_PASSWORD_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH"
   ]
 
   # Set a single write attribute. Perversely, if this list is empty, then *all*
