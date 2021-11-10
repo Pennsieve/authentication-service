@@ -75,7 +75,7 @@ resource "aws_iam_role_policy_attachment" "cognito_users2_migration_lambda_iam_p
 }
 
 resource "aws_iam_policy" "cognito_users2_migration_lambda_iam_policy" {
-  name   = "${var.environment_name}-${var.service_name}-custom-message-lambda-iam-policy-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
+  name   = "${var.environment_name}-${var.service_name}-users2-migration-lambda-iam-policy-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
   path   = "/"
   policy = data.aws_iam_policy_document.cognito_users2_migration_lambda_iam_policy_document.json
 }
