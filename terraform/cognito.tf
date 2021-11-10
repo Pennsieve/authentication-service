@@ -265,6 +265,11 @@ resource "aws_cognito_user_pool_client" "cognito_user_pool_client_2" {
   }
 }
 
+resource "aws_cognito_user_pool_domain" "main" {
+  domain       = "pennsieve-${var.environment_name}-users2"
+  user_pool_id = aws_cognito_user_pool.cognito_user_pool_2.id
+}
+
 resource "aws_cognito_user_pool" "cognito_token_pool" {
   name = "${var.environment_name}-client-tokens-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
 
