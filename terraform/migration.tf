@@ -1,6 +1,6 @@
 resource "aws_lambda_function" "cognito_users2_migration_lambda" {
   description      = "Migrate Cognito users to users2 user pool."
-  function_name    = "${var.environment_name}-${var.service_name}-users2-migration-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
+  function_name    = "${var.environment_name}-${var.service_name}-users2-migration-lambda-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
   handler          = "index.handler"
   runtime          = "nodejs14.x"
   role             = aws_iam_role.cognito_users2_migration_lambda_role.arn
