@@ -245,7 +245,7 @@ resource "aws_cognito_user_pool_client" "cognito_user_pool_client_2" {
   }
 }
 
-resource "aws_cognito_user_pool_domain" "main" {
+resource "aws_cognito_user_pool_domain" "cognito_user_pool_domain" {
   domain       = "pennsieve-${var.environment_name}-users2"
   user_pool_id = aws_cognito_user_pool.cognito_user_pool_2.id
 }
