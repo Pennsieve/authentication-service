@@ -70,7 +70,15 @@ data "aws_iam_policy_document" "cognito_post_authentication_lambda_iam_policy_do
       "logs:CreateLogStream",
       "logs:PutDestination",
       "logs:PutLogEvents",
-      "logs:DescribeLogStreams",
+      "logs:DescribeLogStreams"
+    ]
+    resources = ["*"]
+  }
+  
+  statement {
+    sid    = "EC2NetworkPermissions"
+    effect = "Allow"
+    actions = [
       "ec2:CreateNetworkInterface",
       "ec2:DescribeNetworkInterfaces",
       "ec2:DeleteNetworkInterface",
