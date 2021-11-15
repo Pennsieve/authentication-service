@@ -9,6 +9,12 @@ resource "aws_lambda_function" "cognito_post_authentication_lambda" {
   source_code_hash = data.archive_file.cognito_post_authentication_lambda_archive.output_base64sha256
   filename         = "${path.module}/post-auth.zip"
   
+  environment {
+    variables = {
+      PENNSIEVE_ENV = var.environment_name
+    }
+  }
+  
   vpc_config {
     subnet_ids         = tolist(data.terraform_remote_state.vpc.outputs.private_subnet_ids)
     security_group_ids = [data.terraform_remote_state.platform_infrastructure.outputs.authentication_service_security_group_id]
