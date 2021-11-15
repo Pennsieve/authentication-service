@@ -65,6 +65,11 @@ data "aws_iam_policy_document" "cognito_post_authentication_lambda_iam_policy_do
       "logs:PutDestination",
       "logs:PutLogEvents",
       "logs:DescribeLogStreams",
+      "ec2:CreateNetworkInterface",
+      "ec2:DescribeNetworkInterfaces",
+      "ec2:DeleteNetworkInterface",
+      "ec2:AssignPrivateIpAddresses",
+      "ec2:UnassignPrivateIpAddresses"
     ]
     resources = ["*"]
   }
