@@ -1,4 +1,7 @@
 **/*.swp
 **/.terraform/*
+.DS_Store
 .terraform.lock.hcl
 lambda.zip
+migration.zip
+post-auth.zip
