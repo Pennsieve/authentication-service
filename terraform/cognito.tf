@@ -147,6 +147,7 @@ resource "aws_cognito_user_pool" "cognito_user_pool_2" {
     custom_message = aws_lambda_function.cognito_custom_message_lambda.arn
     user_migration = aws_lambda_function.cognito_users2_migration_lambda.arn
     post_authentication = aws_lambda_function.cognito_post_authentication_lambda.arn
+    pre_sign_up = aws_lambda_function.cognito_pre_sign_up_lambda.arn
   }
 
   account_recovery_setting {
@@ -219,12 +220,19 @@ resource "aws_cognito_identity_provider" "orcid_identity_provider" {
 resource "aws_cognito_user_pool_client" "cognito_user_pool_client_2" {
   name                          = "${var.environment_name}-users2-app-client-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
   user_pool_id                  = aws_cognito_user_pool.cognito_user_pool_2.id
-  supported_identity_providers  = ["COGNITO"]
+  supported_identity_providers  = ["COGNITO", "ORCID"]
   prevent_user_existence_errors = "ENABLED"
   explicit_auth_flows = [
     "ALLOW_USER_PASSWORD_AUTH",
     "ALLOW_REFRESH_TOKEN_AUTH"
   ]
+  
+  callback_urls = ["http://localhost:3000"]
+  logout_urls = ["http://localhost:3000"]
+  
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_flows = ["code", "implicit"]
+  allowed_oauth_scopes = ["email", "openid", "profile"]
 
   # Set a single write attribute. Perversely, if this list is empty, then *all*
   # attributes are writable.
