@@ -101,6 +101,20 @@ data "aws_iam_policy_document" "cognito_pre_sign_up_lambda_iam_policy_document" 
     ]
     resources = ["arn:aws:ssm:${data.aws_region.current_region.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.environment_name}/${var.service_name}/*"]
   }
+  
+  statement {
+    sid    = "CognitoPermissions"
+    effect = "Allow"
+    actions = [
+      "cognito-idp:AdminAddUserToGroup",
+      "cognito-idp:AdminUpdateUserAttributes",
+      "cognito-idp:ListUsers",
+      "cognito-idp:AdminLinkProviderForUser",
+      "cognito-idp:AdminCreateUser",
+      "cognito-idp:AdminSetUserPassword",
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "cognito_pre_sign_up_lambda_iam_policy_attachment" {
