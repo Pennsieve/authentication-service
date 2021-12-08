@@ -126,6 +126,7 @@ def link_orcid(user_pool_id, provider_id):
         return link_result
     else:
         log.info(f"link_orcid() no Pennsieve user was found with orcid_id: {orcid_id}")
+        raise ValueError(f"There is no Pennsieve user linked to ORCID Id {orcid_id}")
         return False
 
 def link_external(event):
@@ -133,18 +134,15 @@ def link_external(event):
     provider_name = event['userName'].split("_")[0]
     provider_id = event['userName'][len(provider_name)+1:].upper()
     if provider_name == "orcid":
-        if link_orcid(user_pool_id, provider_id):
-            event["response"]["autoConfirmUser"] = True
-            event["response"]["autoVerifyPhone"] = True
-            event["response"]["autoVerifyEmail"] = True
+        return link_orcid(user_pool_id, provider_id)
     else:
         log.info(f"link_external() provider {provider_name} is not supported at this time")
-    return event
+        return False
 
 def process_event(event):
     trigger_source = event['triggerSource']
     if trigger_source == "PreSignUp_ExternalProvider":
-        link_external(event)
+        event["response"]["autoConfirmUser"] = event["response"]["autoVerifyPhone"] = event["response"]["autoVerifyEmail"] = link_external(event)
     else:
         log.info(f"process_event() trigger_source {trigger_source} will not be processed (not applicable in this context)")
     return event
