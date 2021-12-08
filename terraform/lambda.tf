@@ -24,6 +24,14 @@ resource "aws_lambda_permission" "custom_message_lambda_permission" {
   statement_id  = "AllowInvocationFromCognito"
 }
 
+resource "aws_lambda_permission" "custom_message_2_lambda_permission" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.cognito_custom_message_lambda.function_name
+  principal     = "cognito-idp.amazonaws.com"
+  source_arn    = aws_cognito_user_pool.cognito_user_pool_2.arn
+  statement_id  = "AllowInvocationFromCognito"
+}
+
 data "archive_file" "lambda_archive" {
   type        = "zip"
   source_dir  = "${path.module}/lambda"
