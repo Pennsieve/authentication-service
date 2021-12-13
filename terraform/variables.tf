@@ -14,3 +14,7 @@ variable "pennsieve_postgres_host" {}
 variable "pennsieve_postgres_db" {
   default = "pennsieve_postgres"
 }
+
+locals {
+  pennsieve_app_url = "${var.environment_name}" == "dev" ? "https://app.pennsieve.net" : "https://app.pennsieve.io"
+}
