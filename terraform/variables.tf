@@ -8,6 +8,8 @@ variable "service_name" {}
 
 variable "vpc_name" {}
 
+variable "domain_name" {}
+
 # Postgres
 variable "pennsieve_postgres_host" {}
 
@@ -16,5 +18,5 @@ variable "pennsieve_postgres_db" {
 }
 
 locals {
-  pennsieve_app_url = "${var.environment_name}" == "dev" ? "https://app.pennsieve.net" : "https://app.pennsieve.io"
+  pennsieve_app_url = "https://app.${var.domain_name}"
 }
