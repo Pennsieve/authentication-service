@@ -27,8 +27,14 @@ user_columns = ["id",
 
 User = namedtuple("User", user_columns)
 
+def logging_level(env_var = "LOGGING_LEVEL"):
+    try:
+        return os.environ[env_var].upper()
+    except:
+        return "INFO"
+
 log = logging.getLogger()
-log.setLevel(logging.INFO)
+log.setLevel(logging_level())
 
 def get_credentials():
     pennsieve_env = os.environ['PENNSIEVE_ENV']

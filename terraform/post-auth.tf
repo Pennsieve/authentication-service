@@ -13,7 +13,8 @@ resource "aws_lambda_function" "cognito_post_authentication_lambda" {
   
   environment {
     variables = {
-      PENNSIEVE_ENV = var.environment_name
+      PENNSIEVE_ENV = var.environment_name,
+      LOGGING_LEVEL = "INFO"
     }
   }
   
