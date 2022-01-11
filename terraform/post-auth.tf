@@ -9,9 +9,12 @@ resource "aws_lambda_function" "cognito_post_authentication_lambda" {
   source_code_hash = data.archive_file.cognito_post_authentication_lambda_archive.output_base64sha256
   filename         = "${path.module}/post-auth.zip"
   
+  layers = [aws_lambda_layer_version.lambda_python_psycopg2_layer.arn]
+  
   environment {
     variables = {
-      PENNSIEVE_ENV = var.environment_name
+      PENNSIEVE_ENV = var.environment_name,
+      LOGGING_LEVEL = "INFO"
     }
   }
   
