@@ -6,6 +6,7 @@ import json
 import boto3
 import psycopg2
 import psycopg2.extras
+from cognito import CognitoAdmin
 
 user_columns = ["id",
                 "email",
@@ -30,46 +31,6 @@ User = namedtuple("User", user_columns)
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
-
-def cognito_action_succeeded(response):
-    return 'ResponseMetadata' in response \
-        and 'HTTPStatusCode' in response['ResponseMetadata'] \
-        and response['ResponseMetadata']['HTTPStatusCode'] == 200
-
-def admin_link_provider_for_user(user_pool_id, destination_user_name, source_provider_name, source_attribute_name, source_attribute_value):
-    log.info(f"admin_link_provider_for_user() linking {source_provider_name}->{source_attribute_value} => {destination_user_name}")
-    client = boto3.client('cognito-idp')
-    response = client.admin_link_provider_for_user(
-        UserPoolId=user_pool_id,
-        DestinationUser={
-            'ProviderName': 'Cognito',
-            'ProviderAttributeName': 'username',
-            'ProviderAttributeValue': destination_user_name
-        },
-        SourceUser={
-            'ProviderName': source_provider_name,
-            'ProviderAttributeName': 'Cognito_Subject',
-            'ProviderAttributeValue': source_attribute_value
-        }
-    )
-    log.info(f"admin_link_provider_for_user() response: {response}")
-    return cognito_action_succeeded(response)
-
-def admin_update_user_attributes(user_pool_id, username, attribute_name, attribute_value):
-    log.info(f"admin_update_user_attributes() username: {username} attribute: {attribute_name} = {attribute_value}")
-    client = boto3.client('cognito-idp')
-    response = client.admin_update_user_attributes(
-        UserPoolId=user_pool_id,
-        Username=username,
-        UserAttributes=[
-            {
-                'Name': attribute_name,
-                'Value': attribute_value
-            }
-        ]
-    )
-    log.info(f"admin_update_user_attributes() response: {response}")
-    return cognito_action_succeeded(response)
 
 def get_credentials():
     pennsieve_env = os.environ['PENNSIEVE_ENV']
@@ -107,7 +68,19 @@ def lookup_user(predicate):
     else:
         return None
 
-def link_orcid(user_pool_id, provider_id):
+def create_new_user():
+    # create Cognito User
+    # create Pennsieve.User
+    # add Pennsieve.User to sandbox organization
+    # return a User
+    return None
+    
+def link_orcid_to_cognito(cognito_admin, orcid_id, cognito_id):
+    link_result = cognito_admin.link_provider_for_user(cognito_id, "ORCID", "user_id", orcid_id) 
+    update_result = cognito_admin.update_user_attributes(cognito_id, "custom:orcid", orcid_id)
+    return CognitoAdmin.action_succeeded(link_result)
+
+def link_orcid_identity(cognito_admin, provider_id):
     # function to select the correct Pennsieve user returned from the database query
     def select_user(user_list):
         # for now, return the first one on the list
@@ -115,26 +88,32 @@ def link_orcid(user_pool_id, provider_id):
     
     # uppercase the orcid_id (seems AWS event lowercases alpha characters)
     orcid_id = provider_id.upper()
+    log.info(f"link_orcid_identity() orcid_id: {orcid_id}")
     
-    log.info(f"link_orcid() orcid_id: {orcid_id}")
     query_predicate = "orcid_authorization @> " + "'{" + "\"orcid\" : " + "\"" + orcid_id + "\"" + "}'"
     user_list = lookup_user(query_predicate)
     if user_list is not None:
         user = select_user(user_list)
-        link_result = admin_link_provider_for_user(user_pool_id, user.cognito_id, "ORCID", "user_id", orcid_id) 
-        update_result = admin_update_user_attributes(user_pool_id, user.cognito_id, "custom:orcid", orcid_id)
-        return link_result
+        return link_orcid_to_cognito(cognito_admin, orcid_id, user.cognito_id)
     else:
-        log.info(f"link_orcid() no Pennsieve user was found with orcid_id: {orcid_id}")
-        raise ValueError(f"There is no Pennsieve user linked to ORCID Id {orcid_id}")
-        return False
+        #log.info(f"link_orcid() no Pennsieve user was found with orcid_id: {orcid_id}")
+        #raise ValueError(f"There is no Pennsieve user linked to ORCID Id {orcid_id}")
+        #return False
+        user = create_new_user()
+        if user is not None:
+            return link_orcid_to_cognito(cognito_admin, orcid_id, user.cognito_id)
+        else:
+            log.error("something failed in new user creation and linking to external identity")
+            return False
 
-def link_external(event):
+def link_external_identity(event):
     user_pool_id = event['userPoolId']
-    provider_name = event['userName'].split("_")[0]
-    provider_id = event['userName'][len(provider_name)+1:].upper()
-    if provider_name == "orcid":
-        return link_orcid(user_pool_id, provider_id)
+    cognito_admin = CognitoAdmin(user_pool_id)
+    
+    provider_name = event['userName'].split("_")[0].upper()
+    provider_id = event['userName'][len(provider_name)+1:]
+    if provider_name == "ORCID":
+        return link_orcid_identity(cognito_admin, provider_id)
     else:
         log.info(f"link_external() provider {provider_name} is not supported at this time")
         return False
@@ -142,7 +121,7 @@ def link_external(event):
 def process_event(event):
     trigger_source = event['triggerSource']
     if trigger_source == "PreSignUp_ExternalProvider":
-        event["response"]["autoConfirmUser"] = event["response"]["autoVerifyPhone"] = event["response"]["autoVerifyEmail"] = link_external(event)
+        event["response"]["autoConfirmUser"] = event["response"]["autoVerifyPhone"] = event["response"]["autoVerifyEmail"] = link_external_identity(event)
     else:
         log.info(f"process_event() trigger_source {trigger_source} will not be processed (not applicable in this context)")
     return event
