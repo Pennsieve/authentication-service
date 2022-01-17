@@ -46,6 +46,8 @@ Organization = namedtuple("Organization", organization_columns)
 
 default_organization_name = "__sandbox__"
 
+bogus_email_domain = "pennsieve.nonexist"
+
 log = logging.getLogger()
 log.setLevel(logging.INFO)
 
@@ -85,11 +87,14 @@ def lookup_user(predicate):
     else:
         return None
 
-def create_new_user():
+def create_new_user(cognito_admin, email=""):
     # create Cognito User
+    response = cognito_admin.create_user(email)
+    log.info(f"create_new_user() cognito_admin.create_user() response: {response}")
+
     # create Pennsieve.User
     # add Pennsieve.User to sandbox organization
-    # return a User
+    # return the Pennsieve.User
     return None
     
 def link_orcid_to_cognito(cognito_admin, orcid_id, cognito_id):
@@ -103,6 +108,9 @@ def link_orcid_identity(cognito_admin, provider_id):
         # for now, return the first one on the list
         return user_list[0]
     
+    def synthesize_email(orcid_id):
+        return f"{orcid_id}@{bogus_email_domain}"
+    
     # uppercase the orcid_id (seems AWS event lowercases alpha characters)
     orcid_id = provider_id.upper()
     log.info(f"link_orcid_identity() orcid_id: {orcid_id}")
@@ -113,10 +121,7 @@ def link_orcid_identity(cognito_admin, provider_id):
         user = select_user(user_list)
         return link_orcid_to_cognito(cognito_admin, orcid_id, user.cognito_id)
     else:
-        #log.info(f"link_orcid() no Pennsieve user was found with orcid_id: {orcid_id}")
-        #raise ValueError(f"There is no Pennsieve user linked to ORCID Id {orcid_id}")
-        #return False
-        user = create_new_user()
+        user = create_new_user(cognito_admin, email=synthesize_email(orcid_id))
         if user is not None:
             return link_orcid_to_cognito(cognito_admin, orcid_id, user.cognito_id)
         else:
