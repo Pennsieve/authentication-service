@@ -29,6 +29,23 @@ user_columns = ["id",
 
 User = namedtuple("User", user_columns)
 
+organization_columns = ["id",
+                        "name",
+                        "slug",
+                        "encryption_key_id",
+                        "terms",
+                        "status",
+                        "updated_at",
+                        "created_at",
+                        "node_id",
+                        "custom_terms_of_service_version",
+                        "size",
+                        "storage_bucket"]
+
+Organization = namedtuple("Organization", organization_columns)
+
+default_organization_name = "__sandbox__"
+
 log = logging.getLogger()
 log.setLevel(logging.INFO)
 
