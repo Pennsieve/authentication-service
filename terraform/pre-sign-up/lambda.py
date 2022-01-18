@@ -134,6 +134,7 @@ def create_new_user(cognito_admin, email=""):
         org_user = add_pennsieve_user_to_organization(user, organization)
 
     # return the Pennsieve.User
+    log.info(f"create_new_user() created user with id: {user.id} cognito_id: {user.cognito_id} email: {user.email}")
     return user
     
 def link_orcid_to_cognito(cognito_admin, orcid_id, cognito_id):
