@@ -82,7 +82,7 @@ def lookup_pennsieve_user(predicate):
         return None
 
 def lookup_pennsieve_organization(organization_name):
-    query = "SELECT * FROM pennsieve.organizations WHERE name='{organization_name}'"
+    query = f"SELECT * FROM pennsieve.organizations WHERE name='{organization_name}'"
     log.info(f"lookup_pennsieve_organization() query: {query}")
     rows = database.select(query)
     log.info(f"lookup_pennsieve_organization() found {len(rows)} organization(s)")
