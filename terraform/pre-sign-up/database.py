@@ -64,7 +64,12 @@ class Database:
         return rows
     
     def insert(self, query):
-        pass
+        cursor = self.__connection.cursor()
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        self.commit()
+        cursor.close()
+        return rows
     
     def update(self, query):
         cursor = self.__connection.cursor()
