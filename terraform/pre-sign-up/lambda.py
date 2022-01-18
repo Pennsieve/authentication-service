@@ -45,7 +45,14 @@ organization_columns = ["id",
 
 Organization = namedtuple("Organization", organization_columns)
 
+organization_user_columns = ["organization_id", 
+                             "user_id", 
+                             "permission_bit", "created_at", "updated_at"]
+
+OrganizationUser = namedtuple("OrganizationUser", organization_user_columns)
+
 default_organization_name = "__sandbox__"
+default_permission_bit = 4
 
 bogus_email_domain = "pennsieve.nonexist"
 
@@ -70,23 +77,64 @@ def lookup_pennsieve_user(predicate):
     log.info(f"lookup_pennsieve_user() rows:")
     log.info(rows)
     if len(rows) > 0:
+        return Organization(*rows[0])
+    else:
+        return None
+
+def lookup_pennsieve_organization(organization_name):
+    query = "SELECT * FROM pennsieve.organizations WHERE name='{organization_name}'"
+    log.info(f"lookup_pennsieve_organization() query: {query}")
+    rows = database.select(query)
+    log.info(f"lookup_pennsieve_organization() found {len(rows)} organization(s)")
+    log.info(f"lookup_pennsieve_organization() rows:")
+    log.info(rows)
+    if len(rows) > 0:
         return [User(*row) for row in rows]
     else:
         return None
 
+def add_pennsieve_user_to_organization(user, organization, permission_bit=default_permission_bit):
+    query = "INSERT INTO pennsieve.organization_user(organization_id, user_id, permission_bit) VALUES({organization.id}, {user.id}, {permission_bit}) RETURNING *"
+    log.info(f"add_pennsieve_user_to_organization() query: {query}")
+    rows = database.insert(query)
+    log.info(f"add_pennsieve_user_to_organization() insert returned {len(rows)} user(s)")
+    log.info(f"add_pennsieve_user_to_organization() rows:")
+    log.info(rows)
+    if len(rows) > 0:
+        return OrganizationUser(*rows[0])
+    else:
+        return None
+
+def create_pennsieve_user(email, cognito_id):
+    query = f"INSERT INTO pennsieve.users(email, cognito_id) VALUES('{email}','{cognito_id}') RETURNING *"
+    log.info(f"create_pennsieve_user() query: {query}")
+    rows = database.insert(query)
+    log.info(f"create_pennsieve_user() insert returned {len(rows)} user(s)")
+    log.info(f"create_pennsieve_user() rows:")
+    log.info(rows)
+    if len(rows) > 0:
+        return User(*rows[0])
+    else:
+        return None
+    
 def create_new_user(cognito_admin, email=""):
     # create Cognito User
     response = cognito_admin.create_user(email)
     log.info(f"create_new_user() cognito_admin.create_user() response: {response}")
     if not CognitoAdmin.action_succeeded(response):
-        #log.error(f"something went wrong while creating Cognito user")
         return None
-
+    cognito_id = response['User']['Username']
+    
     # create Pennsieve.User
+    user = create_pennsieve_user(email, cognito_id)
     
     # add Pennsieve.User to sandbox organization
+    organization = lookup_pennsieve_organization(default_organization_name)
+    if organization is not None:
+        org_user = add_pennsieve_user_to_organization(user, organization)
+
     # return the Pennsieve.User
-    return None
+    return user
     
 def link_orcid_to_cognito(cognito_admin, orcid_id, cognito_id):
     link_result = cognito_admin.link_provider_for_user(cognito_id, "ORCID", "user_id", orcid_id) 
