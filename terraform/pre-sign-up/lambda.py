@@ -127,10 +127,10 @@ def create_new_user(cognito_admin, email=""):
     
     # create Pennsieve.User
     user = create_pennsieve_user(email, cognito_id)
-    
+
     # add Pennsieve.User to sandbox organization
     organization = lookup_pennsieve_organization(default_organization_name)
-    if organization is not None:
+    if None not in (user, organization):
         org_user = add_pennsieve_user_to_organization(user, organization)
 
     # return the Pennsieve.User
