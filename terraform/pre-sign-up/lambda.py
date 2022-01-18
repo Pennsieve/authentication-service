@@ -77,7 +77,7 @@ def lookup_pennsieve_user(predicate):
     log.info(f"lookup_pennsieve_user() rows:")
     log.info(rows)
     if len(rows) > 0:
-        return Organization(*rows[0])
+        return [User(*row) for row in rows]
     else:
         return None
 
@@ -89,7 +89,7 @@ def lookup_pennsieve_organization(organization_name):
     log.info(f"lookup_pennsieve_organization() rows:")
     log.info(rows)
     if len(rows) > 0:
-        return [User(*row) for row in rows]
+        return Organization(*rows[0])
     else:
         return None
 
