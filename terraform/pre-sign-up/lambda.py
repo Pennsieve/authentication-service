@@ -94,7 +94,7 @@ def lookup_pennsieve_organization(organization_name):
         return None
 
 def add_pennsieve_user_to_organization(user, organization, permission_bit=default_permission_bit):
-    query = "INSERT INTO pennsieve.organization_user(organization_id, user_id, permission_bit) VALUES({organization.id}, {user.id}, {permission_bit}) RETURNING *"
+    query = f"INSERT INTO pennsieve.organization_user(organization_id, user_id, permission_bit) VALUES({organization.id}, {user.id}, {permission_bit}) RETURNING *"
     log.info(f"add_pennsieve_user_to_organization() query: {query}")
     rows = database.insert(query)
     log.info(f"add_pennsieve_user_to_organization() insert returned {len(rows)} user(s)")
