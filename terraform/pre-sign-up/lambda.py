@@ -137,6 +137,7 @@ def create_new_user(cognito_admin, email=""):
     return user
     
 def link_orcid_to_cognito(cognito_admin, orcid_id, cognito_id):
+    log.info(f"link_orcid_to_cognito() orcid_id: {orcid_id} -> cognito_id: {cognito_id}")
     link_result = cognito_admin.link_provider_for_user(cognito_id, "ORCID", "user_id", orcid_id) 
     update_result = cognito_admin.update_user_attributes(cognito_id, "custom:orcid", orcid_id)
     return CognitoAdmin.action_succeeded(link_result)
