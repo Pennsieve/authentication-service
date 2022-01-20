@@ -227,8 +227,9 @@ resource "aws_cognito_user_pool_client" "cognito_user_pool_client_2" {
     "ALLOW_REFRESH_TOKEN_AUTH"
   ]
   
-  callback_urls = [ "${local.pennsieve_app_url}" ]
-  logout_urls = [ "${local.pennsieve_app_url}" ]
+  callback_urls = flatten(["${local.pennsieve_app_url}", "${var.environment_name}" == "dev" ? ["http://localhost/3000"] : []])
+  logout_urls = flatten(["${local.pennsieve_app_url}", "${var.environment_name}" == "dev" ? ["http://localhost/3000"] : []])
+
   
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_flows = ["code", "implicit"]
