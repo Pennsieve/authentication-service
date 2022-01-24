@@ -130,11 +130,30 @@ def create_pennsieve_user(email, cognito_id, preferred_org_id):
     else:
         return None
 
+def random_password():
+    def random_number():
+        return random.SystemRandom().choice(string.digits)
+    
+    def random_lowercase():
+        return random.SystemRandom().choice(string.ascii_lowercase)
+    
+    def random_uppercase():
+        return random.SystemRandom().choice(string.ascii_uppercase)
+    
+    def random_punctuation():
+        return random.SystemRandom().choice(".,+-/=:!%^")
+    
+    def random_prefix():
+        return f"{random_number()}{random_lowercase()}{random_punctuation()}{random_uppercase()}"
+    
+    def random_string(N):
+        C = string.ascii_uppercase + string.ascii_lowercase + string.digits
+        return ''.join(random.SystemRandom().choice(C) for _ in range(N))
+    
+    N = random.SystemRandom().choice([31,33,35,37,39])
+    return f"{random_prefix()}{random_string(N)}"
+
 def create_cognito_user(cognito_admin, email):
-    def random_password():
-        N = random.SystemRandom().choice([31,33,35,37,39])
-        return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(N))
-        
     # create Cognito User
     response = cognito_admin.create_user(email)
     log.info(f"cognito_admin.create_user() response: {response}")
