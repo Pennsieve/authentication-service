@@ -3,6 +3,9 @@ import datetime
 from collections import namedtuple
 import logging
 import json
+import random
+import string
+import uuid
 import boto3
 import psycopg2
 import psycopg2.extras
@@ -106,9 +109,18 @@ def add_pennsieve_user_to_organization(user, organization, permission_bit=defaul
     else:
         return None
 
-def create_pennsieve_user(email, cognito_id):
-    query = f"INSERT INTO pennsieve.users(email, cognito_id) VALUES('{email}','{cognito_id}') RETURNING *"
+def create_pennsieve_user(email, cognito_id, preferred_org_id):
+    node_id = f"N:user:{uuid.uuid1()}"
+    color = "#808080"
+    status = 't'
+    authy_id = 0
+    is_super_admin = 'f'
+    
+    insert_columns = f"email, cognito_id, preferred_org_id, node_id, color, status, authy_id, is_super_admin"
+    insert_values  = f"'{email}', '{cognito_id}', {preferred_org_id}, '{node_id}', '{color}', '{status}', {authy_id}, '{is_super_admin}'"
+    query = f"INSERT INTO pennsieve.users({insert_columns}) VALUES({insert_values}) RETURNING *"
     log.info(f"create_pennsieve_user() query: {query}")
+    
     rows = database.insert(query)
     log.info(f"create_pennsieve_user() insert returned {len(rows)} user(s)")
     log.info(f"create_pennsieve_user() rows:")
@@ -117,22 +129,49 @@ def create_pennsieve_user(email, cognito_id):
         return User(*rows[0])
     else:
         return None
-    
-def create_new_user(cognito_admin, email=""):
+
+def create_cognito_user(cognito_admin, email):
+    def random_password():
+        N = random.SystemRandom().choice([31,33,35,37,39])
+        return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(N))
+        
     # create Cognito User
     response = cognito_admin.create_user(email)
-    log.info(f"create_new_user() cognito_admin.create_user() response: {response}")
+    log.info(f"cognito_admin.create_user() response: {response}")
     if not CognitoAdmin.action_succeeded(response):
         return None
     cognito_id = response['User']['Username']
     
-    # create Pennsieve.User
-    user = create_pennsieve_user(email, cognito_id)
-
-    # add Pennsieve.User to sandbox organization
+    # set Cognito User's password
+    response = cognito_admin.set_user_password(cognito_id, random_password())
+    log.info(f"cognito_admin.set_user_password() response: {response}")
+    if not CognitoAdmin.action_succeeded(response):
+        return None
+    
+    # return the Cognito Id of the newly created user
+    return cognito_id
+    
+def create_new_user(cognito_admin, email):
+    cognito_id = create_cognito_user(cognito_admin, email)
+    if cognito_id is None:
+        return None
+    
+    # lookup default organization
     organization = lookup_pennsieve_organization(default_organization_name)
-    if None not in (user, organization):
-        org_user = add_pennsieve_user_to_organization(user, organization)
+    if organization is None:
+        log.error(f"create_new_user() failed to lookup organization: {default_organization_name}")
+        return None
+    
+    # create Pennsieve.User
+    user = create_pennsieve_user(email, cognito_id, organization.id)
+
+    # add Pennsieve.User to organization
+    if user is None:
+        log.error(f"create_new_user() failed to create Pennsieve.User")
+        return None
+        
+    # add user to organization
+    org_user = add_pennsieve_user_to_organization(user, organization)
 
     # return the Pennsieve.User
     log.info(f"create_new_user() created user with id: {user.id} cognito_id: {user.cognito_id} email: {user.email}")
@@ -163,10 +202,11 @@ def link_orcid_identity(cognito_admin, provider_id):
         user = select_user(user_list)
         return link_orcid_to_cognito(cognito_admin, orcid_id, user.cognito_id)
     else:
-        user = create_new_user(cognito_admin, email=synthesize_email(orcid_id))
+        user = create_new_user(cognito_admin, synthesize_email(orcid_id))
         if user is not None:
             return link_orcid_to_cognito(cognito_admin, orcid_id, user.cognito_id)
         else:
+            # TODO: might want to raise an exception here
             log.error("something failed in new user creation and linking to external identity")
             return False
 
