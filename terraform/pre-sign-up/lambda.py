@@ -26,7 +26,8 @@ user_columns = ["id",
                 "orcid_authorization",
                 "middle_initial",
                 "degree",
-                "cognito_id"]
+                "cognito_id",
+                "is_integration_user"]
 
 User = namedtuple("User", user_columns)
 
