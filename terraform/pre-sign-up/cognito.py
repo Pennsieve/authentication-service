@@ -46,6 +46,15 @@ class CognitoAdmin:
         )
         return response
 
+    def set_user_password(self, username, password):
+        response = self.__client.admin_set_user_password(
+            UserPoolId=self.__user_pool_id,
+            Username=username,
+            Password=password,
+            Permanent=True
+        )
+        return response
+    
     def update_user_attributes(self, username, attribute_name, attribute_value):
         response = self.__client.admin_update_user_attributes(
             UserPoolId=self.__user_pool_id,
