@@ -20,6 +20,10 @@ class CognitoAdmin:
                     'Value': email
                 },
                 {
+                    'Name': 'email_verified',
+                    'Value': 'true'
+                },
+                {
                     'Name': 'custom:invite_path',
                     'Value': invite_path
                 },
