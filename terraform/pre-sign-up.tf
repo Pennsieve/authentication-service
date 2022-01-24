@@ -112,6 +112,7 @@ data "aws_iam_policy_document" "cognito_pre_sign_up_lambda_iam_policy_document" 
       "cognito-idp:AdminLinkProviderForUser",
       "cognito-idp:AdminCreateUser",
       "cognito-idp:AdminSetUserPassword",
+      "cognito-idp:AdminConfirmSignUp",
     ]
     resources = ["*"]
   }
