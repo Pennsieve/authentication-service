@@ -4,7 +4,7 @@ resource "aws_lambda_function" "cognito_pre_sign_up_lambda" {
   handler          = "lambda.handler"
   runtime          = "python3.8"
   role             = aws_iam_role.cognito_pre_sign_up_lambda_role.arn
-  timeout          = 3
+  timeout          = 10
   memory_size      = 128
   source_code_hash = data.archive_file.pre_sign_up_lambda_archive.output_base64sha256
   filename         = data.archive_file.pre_sign_up_lambda_archive.output_path
