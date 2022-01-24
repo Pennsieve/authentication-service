@@ -33,6 +33,13 @@ class CognitoAdmin:
         )
         # TODO: return the Cognito Id
         return response
+    
+    def confirm_user(self, username):
+        response = self.__client.admin_confirm_sign_up(
+            UserPoolId=self.__user_pool_id,
+            Username=username
+        )
+        return response
 
     def link_provider_for_user(self, destination_user_name, source_provider_name, source_attribute_name, source_attribute_value):
         response = self.__client.admin_link_provider_for_user(
