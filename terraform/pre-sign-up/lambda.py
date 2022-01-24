@@ -161,6 +161,12 @@ def create_cognito_user(cognito_admin, email):
         return None
     cognito_id = response['User']['Username']
     
+    # confirm the user
+    response = cognito_admin.confirm_user(cognito_id)
+    log.info(f"cognito_admin.confirm_user() response: {response}")
+    if not CognitoAdmin.action_succeeded(response):
+        log.warn(f"cognito_admin.confirm_user() was not successful")
+    
     # set Cognito User's password
     response = cognito_admin.set_user_password(cognito_id, random_password())
     log.info(f"cognito_admin.set_user_password() response: {response}")
