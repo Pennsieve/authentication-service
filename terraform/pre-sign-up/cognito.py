@@ -10,7 +10,7 @@ class CognitoAdmin:
             and 'HTTPStatusCode' in response['ResponseMetadata'] \
             and response['ResponseMetadata']['HTTPStatusCode'] == 200
 
-    def create_user(self, email, invite_path="self-service"):
+    def create_user(self, email, invite_path="self-service", temp_password="New+Password-1"):
         response = self.__client.admin_create_user(
             UserPoolId=self.__user_pool_id,
             Username=email,
@@ -28,6 +28,7 @@ class CognitoAdmin:
                     'Value': invite_path
                 },
             ],
+            TemporaryPassword=temp_password,
             ForceAliasCreation=False,
             MessageAction='SUPPRESS'
         )
