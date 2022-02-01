@@ -150,28 +150,18 @@ def random_password():
         C = string.ascii_uppercase + string.ascii_lowercase + string.digits
         return ''.join(random.SystemRandom().choice(C) for _ in range(N))
     
-    N = random.SystemRandom().choice([31,33,35,37,39])
-    return f"{random_prefix()}{random_string(N)}"
+    def random_uuid():
+        return str(uuid.uuid4())
+    
+    return f"{random_uuid()}{random_uppercase()}"
 
 def create_cognito_user(cognito_admin, email):
     # create Cognito User
-    response = cognito_admin.create_user(email)
+    response = cognito_admin.create_user(email, temp_password = random_password())
     log.info(f"cognito_admin.create_user() response: {response}")
     if not CognitoAdmin.action_succeeded(response):
         return None
     cognito_id = response['User']['Username']
-    
-    # confirm the user
-    response = cognito_admin.confirm_user(cognito_id)
-    log.info(f"cognito_admin.confirm_user() response: {response}")
-    if not CognitoAdmin.action_succeeded(response):
-        log.warn(f"cognito_admin.confirm_user() was not successful")
-    
-    # set Cognito User's password
-    response = cognito_admin.set_user_password(cognito_id, random_password())
-    log.info(f"cognito_admin.set_user_password() response: {response}")
-    if not CognitoAdmin.action_succeeded(response):
-        return None
     
     # return the Cognito Id of the newly created user
     return cognito_id
