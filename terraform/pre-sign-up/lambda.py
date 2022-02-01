@@ -55,10 +55,10 @@ organization_user_columns = ["organization_id",
 
 OrganizationUser = namedtuple("OrganizationUser", organization_user_columns)
 
-default_organization_name = "__sandbox__"
+default_organization_slug = "__sandbox__"
 default_permission_bit = 4
 
-bogus_email_domain = "pennsieve.nonexist"
+bogus_email_domain = "pennsieve-nonexistent.email"
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -73,24 +73,36 @@ def get_credentials():
                                 username = ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-user', WithDecryption=True)['Parameter']['Value'],
                                 password = ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-password', WithDecryption=True)['Parameter']['Value'])
 
+def column_list(columns):
+    return ",".join(columns)
+
+def value_list(values):
+    string = ""
+    sep = ""
+    for item in values:
+        if type(item) == str:
+            string = f"{string}{sep}'{item}'"
+        if type(item) == int:
+            string = f"{string}{sep}{item}"
+        sep = ","
+    return string
+
 def lookup_pennsieve_user(predicate):
     query = f"SELECT * FROM pennsieve.users WHERE {predicate}"
     log.info(f"lookup_pennsieve_user() query: {query}")
     rows = database.select(query)
-    log.info(f"lookup_pennsieve_user() found {len(rows)} user(s)")
-    log.info(f"lookup_pennsieve_user() rows:")
+    log.info(f"lookup_pennsieve_user() found {len(rows)} row(s)")
     log.info(rows)
     if len(rows) > 0:
         return [User(*row) for row in rows]
     else:
         return None
 
-def lookup_pennsieve_organization(organization_name):
-    query = f"SELECT * FROM pennsieve.organizations WHERE name='{organization_name}'"
+def lookup_pennsieve_organization(slug):
+    query = f"SELECT * FROM pennsieve.organizations WHERE slug='{slug}'"
     log.info(f"lookup_pennsieve_organization() query: {query}")
     rows = database.select(query)
-    log.info(f"lookup_pennsieve_organization() found {len(rows)} organization(s)")
-    log.info(f"lookup_pennsieve_organization() rows:")
+    log.info(f"lookup_pennsieve_organization() found {len(rows)} row(s)")
     log.info(rows)
     if len(rows) > 0:
         return Organization(*rows[0])
@@ -98,11 +110,10 @@ def lookup_pennsieve_organization(organization_name):
         return None
 
 def add_pennsieve_user_to_organization(user, organization, permission_bit=default_permission_bit):
-    query = f"INSERT INTO pennsieve.organization_user(organization_id, user_id, permission_bit) VALUES({organization.id}, {user.id}, {permission_bit}) RETURNING *"
-    log.info(f"add_pennsieve_user_to_organization() query: {query}")
-    rows = database.insert(query)
-    log.info(f"add_pennsieve_user_to_organization() insert returned {len(rows)} user(s)")
-    log.info(f"add_pennsieve_user_to_organization() rows:")
+    statement = f"INSERT INTO pennsieve.organization_user(organization_id, user_id, permission_bit) VALUES({organization.id}, {user.id}, {permission_bit}) RETURNING *"
+    log.info(f"add_pennsieve_user_to_organization() statement: {statement}")
+    rows = database.insert(statement)
+    log.info(f"add_pennsieve_user_to_organization() insert returned {len(rows)} row(s)")
     log.info(rows)
     if len(rows) > 0:
         return OrganizationUser(*rows[0])
@@ -110,20 +121,47 @@ def add_pennsieve_user_to_organization(user, organization, permission_bit=defaul
         return None
 
 def create_pennsieve_user(email, cognito_id, preferred_org_id):
-    node_id = f"N:user:{uuid.uuid1()}"
-    color = "#808080"
-    status = 't'
-    authy_id = 0
-    is_super_admin = 'f'
+    node_id = f"N:user:{uuid.uuid4()}"
+    color = "#F45D01"
+
+    user_insert_columns = [ "email",
+                            "first_name",
+                            "last_name",
+                            "credential",
+                            "color",
+                            "url",
+                            "authy_id",
+                            "is_super_admin",
+                            "preferred_org_id",
+                            "status",
+                            "node_id",
+                            "orcid_authorization",
+                            "middle_initial",
+                            "degree",
+                            "cognito_id",
+                            "is_integration_user" ]
+    user_insert_values = [  email,
+                            "orcid",
+                            "login",
+                            "",
+                            color,
+                            "",
+                            0,
+                            "f",
+                            preferred_org_id,
+                            "t",
+                            node_id,
+                            "",
+                            "",
+                            "",
+                            cognito_id,
+                            "f" ]
     
-    insert_columns = f"email, cognito_id, preferred_org_id, node_id, color, status, authy_id, is_super_admin"
-    insert_values  = f"'{email}', '{cognito_id}', {preferred_org_id}, '{node_id}', '{color}', '{status}', {authy_id}, '{is_super_admin}'"
-    query = f"INSERT INTO pennsieve.users({insert_columns}) VALUES({insert_values}) RETURNING *"
-    log.info(f"create_pennsieve_user() query: {query}")
+    statement = f"INSERT INTO pennsieve.users({column_list(user_insert_columns)}) VALUES({value_list(user_insert_values)}) RETURNING *"
+    log.info(f"create_pennsieve_user() statement: {statement}")
     
-    rows = database.insert(query)
-    log.info(f"create_pennsieve_user() insert returned {len(rows)} user(s)")
-    log.info(f"create_pennsieve_user() rows:")
+    rows = database.insert(statement)
+    log.info(f"create_pennsieve_user() insert returned {len(rows)} row(s)")
     log.info(rows)
     if len(rows) > 0:
         return User(*rows[0])
@@ -178,9 +216,9 @@ def create_new_user(cognito_admin, email):
         return None
     
     # lookup default organization
-    organization = lookup_pennsieve_organization(default_organization_name)
+    organization = lookup_pennsieve_organization(default_organization_slug)
     if organization is None:
-        log.error(f"create_new_user() failed to lookup organization: {default_organization_name}")
+        log.error(f"create_new_user() failed to lookup organization: {default_organization_slug}")
         return None
     
     # create Pennsieve.User
@@ -211,7 +249,7 @@ def link_orcid_identity(cognito_admin, provider_id):
         return user_list[0]
     
     def synthesize_email(orcid_id):
-        return f"{orcid_id}@{bogus_email_domain}"
+        return f"orcid+{orcid_id}@{bogus_email_domain}"
     
     # uppercase the orcid_id (seems AWS event lowercases alpha characters)
     orcid_id = provider_id.upper()
