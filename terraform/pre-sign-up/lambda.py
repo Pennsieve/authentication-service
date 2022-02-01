@@ -202,10 +202,10 @@ def create_cognito_user(cognito_admin, email):
     cognito_id = response['User']['Username']
     
     # confirm sign-up
-    response = cognito_admin.confirm_sign_up(cognito_id)
-    log.info(f"cognito_admin.confirm_sign_up() response: {response}")
-    if not CognitoAdmin.action_succeeded(response):
-        log.warn(f"cognito_admin.confirm_sign_up() was not successful")
+    #response = cognito_admin.confirm_sign_up(cognito_id)
+    #log.info(f"cognito_admin.confirm_sign_up() response: {response}")
+    #if not CognitoAdmin.action_succeeded(response):
+    #    log.warn(f"cognito_admin.confirm_sign_up() was not successful")
     
     # return the Cognito Id of the newly created user
     return cognito_id
@@ -281,12 +281,25 @@ def link_external_identity(event):
         log.info(f"link_external() provider {provider_name} is not supported at this time")
         return False
 
+def auto_verify_admin_create_user(event):
+    email = event['request']['userAttributes']['email']
+    user, domain = email.split("@")
+    origin = user.split("+")[0]
+    if origin == 'orcid' and domain == bogus_email_domain:
+        log.info(f"auto_verify_admin_create_user() {email}: True")
+        return True
+    else:
+        log.info(f"auto_verify_admin_create_user() {email}: False")
+        return False
+
 def process_event(event):
     trigger_source = event['triggerSource']
     if trigger_source == "PreSignUp_ExternalProvider":
         database.connect(get_credentials())
         event["response"]["autoConfirmUser"] = event["response"]["autoVerifyPhone"] = event["response"]["autoVerifyEmail"] = link_external_identity(event)
         database.disconnect()
+    elif trigger_source == "PreSignUp_AdminCreateUser":
+        event["response"]["autoConfirmUser"] = event["response"]["autoVerifyPhone"] = event["response"]["autoVerifyEmail"] = auto_verify_admin_create_user(event)
     else:
         log.info(f"process_event() trigger_source {trigger_source} will not be processed (not applicable in this context)")
     return event
