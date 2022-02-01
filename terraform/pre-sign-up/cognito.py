@@ -30,6 +30,7 @@ class CognitoAdmin:
             ],
             TemporaryPassword=temp_password,
             ForceAliasCreation=False,
+            DesiredDeliveryMediums = ['EMAIL'],
             MessageAction='SUPPRESS'
         )
         # TODO: return the Cognito Id
