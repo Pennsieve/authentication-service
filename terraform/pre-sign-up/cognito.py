@@ -36,7 +36,7 @@ class CognitoAdmin:
         # TODO: return the Cognito Id
         return response
     
-    def confirm_user(self, username):
+    def confirm_sign_up(self, username):
         response = self.__client.admin_confirm_sign_up(
             UserPoolId=self.__user_pool_id,
             Username=username

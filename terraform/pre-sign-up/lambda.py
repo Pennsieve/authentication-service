@@ -163,6 +163,12 @@ def create_cognito_user(cognito_admin, email):
         return None
     cognito_id = response['User']['Username']
     
+    # confirm sign-up
+    response = cognito_admin.confirm_sign_up(cognito_id)
+    log.info(f"cognito_admin.confirm_sign_up() response: {response}")
+    if not CognitoAdmin.action_succeeded(response):
+        log.warn(f"cognito_admin.confirm_sign_up() was not successful")
+    
     # return the Cognito Id of the newly created user
     return cognito_id
     
