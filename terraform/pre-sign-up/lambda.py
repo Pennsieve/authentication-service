@@ -84,6 +84,8 @@ def value_list(values):
             string = f"{string}{sep}'{item}'"
         if type(item) == int:
             string = f"{string}{sep}{item}"
+        if type(item) == type(None):
+            string = f"{string}{sep}null"
         sep = ","
     return string
 
@@ -151,7 +153,7 @@ def create_pennsieve_user(email, cognito_id, preferred_org_id):
                             "t",
                             node_id,
                             "",
-                            "",
+                            None,
                             cognito_id,
                             "f" ]
     
