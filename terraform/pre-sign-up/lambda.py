@@ -253,19 +253,23 @@ def link_orcid_identity(cognito_admin, provider_id):
     orcid_id = provider_id.upper()
     log.info(f"link_orcid_identity() orcid_id: {orcid_id}")
     
+    # Use ORCID iD to lookup user in Pennsieve database. If no user has linked this ORCID iD to
+    # their Pennsieve account, then create a new user (thus permitting sign-up with ORCID iD).
     query_predicate = "orcid_authorization @> " + "'{" + "\"orcid\" : " + "\"" + orcid_id + "\"" + "}'"
     user_list = lookup_pennsieve_user(query_predicate)
     if user_list is not None:
         user = select_user(user_list)
-        return link_orcid_to_cognito(cognito_admin, orcid_id, user.cognito_id)
     else:
         user = create_new_user(cognito_admin, synthesize_email(orcid_id))
-        if user is not None:
-            return link_orcid_to_cognito(cognito_admin, orcid_id, user.cognito_id)
-        else:
-            # TODO: might want to raise an exception here
-            log.error("something failed in new user creation and linking to external identity")
-            return False
+    
+    # Link the Cognito user to the ORCID identity. This will return the Cognito identity as the logged
+    # in user, authenticated with ORCID iD credentials.
+    if user is not None:
+        return link_orcid_to_cognito(cognito_admin, orcid_id, user.cognito_id)
+    else:
+        # TODO: might want to raise an exception here
+        log.error("something failed in new user creation and linking to external identity")
+        return False
 
 def link_external_identity(event):
     user_pool_id = event['userPoolId']
@@ -279,25 +283,12 @@ def link_external_identity(event):
         log.info(f"link_external() provider {provider_name} is not supported at this time")
         return False
 
-def auto_verify_admin_create_user(event):
-    email = event['request']['userAttributes']['email']
-    user, domain = email.split("@")
-    origin = user.split("+")[0]
-    if origin == 'orcid' and domain == bogus_email_domain:
-        log.info(f"auto_verify_admin_create_user() {email}: True")
-        return True
-    else:
-        log.info(f"auto_verify_admin_create_user() {email}: False")
-        return False
-
 def process_event(event):
     trigger_source = event['triggerSource']
     if trigger_source == "PreSignUp_ExternalProvider":
         database.connect(get_credentials())
         event["response"]["autoConfirmUser"] = event["response"]["autoVerifyPhone"] = event["response"]["autoVerifyEmail"] = link_external_identity(event)
         database.disconnect()
-    elif trigger_source == "PreSignUp_AdminCreateUser":
-        event["response"]["autoConfirmUser"] = event["response"]["autoVerifyPhone"] = event["response"]["autoVerifyEmail"] = auto_verify_admin_create_user(event)
     else:
         log.info(f"process_event() trigger_source {trigger_source} will not be processed (not applicable in this context)")
     return event
