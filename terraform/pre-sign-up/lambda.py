@@ -45,7 +45,9 @@ organization_columns = ["id",
                         "node_id",
                         "custom_terms_of_service_version",
                         "size",
-                        "storage_bucket"]
+                        "storage_bucket",
+                        "publish_bucket",
+                        "embargo_bucket"]
 
 Organization = namedtuple("Organization", organization_columns)
 
