@@ -45,9 +45,7 @@ organization_columns = ["id",
                         "node_id",
                         "custom_terms_of_service_version",
                         "size",
-                        "storage_bucket",
-                        "publish_bucket",
-                        "embargo_bucket"]
+                        "storage_bucket"]
 
 Organization = namedtuple("Organization", organization_columns)
 
@@ -78,6 +76,9 @@ def get_credentials():
 def column_list(columns):
     return ",".join(columns)
 
+def type_columns(T):
+    return column_list(T._fields)
+
 def value_list(values):
     string = ""
     sep = ""
@@ -92,7 +93,7 @@ def value_list(values):
     return string
 
 def lookup_pennsieve_user(predicate):
-    query = f"SELECT * FROM pennsieve.users WHERE {predicate}"
+    query = f"SELECT {type_columns(User)} FROM pennsieve.users WHERE {predicate}"
     log.info(f"lookup_pennsieve_user() query: {query}")
     rows = database.select(query)
     log.info(f"lookup_pennsieve_user() found {len(rows)} row(s)")
@@ -103,7 +104,7 @@ def lookup_pennsieve_user(predicate):
         return None
 
 def lookup_pennsieve_organization(slug):
-    query = f"SELECT * FROM pennsieve.organizations WHERE slug='{slug}'"
+    query = f"SELECT {type_columns(Organization)} FROM pennsieve.organizations WHERE slug='{slug}'"
     log.info(f"lookup_pennsieve_organization() query: {query}")
     rows = database.select(query)
     log.info(f"lookup_pennsieve_organization() found {len(rows)} row(s)")
@@ -114,7 +115,7 @@ def lookup_pennsieve_organization(slug):
         return None
 
 def add_pennsieve_user_to_organization(user, organization, permission_bit=default_permission_bit):
-    statement = f"INSERT INTO pennsieve.organization_user(organization_id, user_id, permission_bit) VALUES({organization.id}, {user.id}, {permission_bit}) RETURNING *"
+    statement = f"INSERT INTO pennsieve.organization_user(organization_id, user_id, permission_bit) VALUES({organization.id}, {user.id}, {permission_bit}) RETURNING {type_columns(OrganizationUser)}"
     log.info(f"add_pennsieve_user_to_organization() statement: {statement}")
     rows = database.insert(statement)
     log.info(f"add_pennsieve_user_to_organization() insert returned {len(rows)} row(s)")
