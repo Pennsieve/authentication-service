@@ -211,9 +211,9 @@ resource "aws_cognito_identity_provider" "orcid_identity_provider" {
   provider_details = {
     attributes_request_method = "GET"
     authorize_scopes = "openid"
-    client_id = "APP-EJ4B8QHE9FR5KABK"
-    client_secret = "655a1695-b6ba-439d-8403-3fef863dc23a"
-    oidc_issuer = "https://sandbox.orcid.org"
+    client_id = "${var.orcid_client_id}"
+    client_secret = "${var.orcid_client_secret}"
+    oidc_issuer = "${var.orcid_oidc_issuer}"
   }
 }
 
