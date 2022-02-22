@@ -3,9 +3,14 @@ import datetime
 from collections import namedtuple
 import logging
 import json
+import random
+import string
+import uuid
 import boto3
 import psycopg2
 import psycopg2.extras
+from cognito import CognitoAdmin
+from database import ConnectionParameters, Database
 
 user_columns = ["id",
                 "email",
@@ -24,117 +29,261 @@ user_columns = ["id",
                 "orcid_authorization",
                 "middle_initial",
                 "degree",
-                "cognito_id"]
+                "cognito_id",
+                "is_integration_user"]
 
 User = namedtuple("User", user_columns)
+
+organization_columns = ["id",
+                        "name",
+                        "slug",
+                        "encryption_key_id",
+                        "terms",
+                        "status",
+                        "updated_at",
+                        "created_at",
+                        "node_id",
+                        "custom_terms_of_service_version",
+                        "size",
+                        "storage_bucket"]
+
+Organization = namedtuple("Organization", organization_columns)
+
+organization_user_columns = ["organization_id", 
+                             "user_id", 
+                             "permission_bit", "created_at", "updated_at"]
+
+OrganizationUser = namedtuple("OrganizationUser", organization_user_columns)
+
+default_organization_slug = "__sandbox__"
+default_permission_bit = 4
+
+bogus_email_domain = "pennsieve-nonexistent.email"
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
 
-def cognito_action_succeeded(response):
-    return 'ResponseMetadata' in response \
-        and 'HTTPStatusCode' in response['ResponseMetadata'] \
-        and response['ResponseMetadata']['HTTPStatusCode'] == 200
-
-def admin_link_provider_for_user(user_pool_id, destination_user_name, source_provider_name, source_attribute_name, source_attribute_value):
-    log.info(f"admin_link_provider_for_user() linking {source_provider_name}->{source_attribute_value} => {destination_user_name}")
-    client = boto3.client('cognito-idp')
-    response = client.admin_link_provider_for_user(
-        UserPoolId=user_pool_id,
-        DestinationUser={
-            'ProviderName': 'Cognito',
-            'ProviderAttributeName': 'username',
-            'ProviderAttributeValue': destination_user_name
-        },
-        SourceUser={
-            'ProviderName': source_provider_name,
-            'ProviderAttributeName': 'Cognito_Subject',
-            'ProviderAttributeValue': source_attribute_value
-        }
-    )
-    log.info(f"admin_link_provider_for_user() response: {response}")
-    return cognito_action_succeeded(response)
-
-def admin_update_user_attributes(user_pool_id, username, attribute_name, attribute_value):
-    log.info(f"admin_update_user_attributes() username: {username} attribute: {attribute_name} = {attribute_value}")
-    client = boto3.client('cognito-idp')
-    response = client.admin_update_user_attributes(
-        UserPoolId=user_pool_id,
-        Username=username,
-        UserAttributes=[
-            {
-                'Name': attribute_name,
-                'Value': attribute_value
-            }
-        ]
-    )
-    log.info(f"admin_update_user_attributes() response: {response}")
-    return cognito_action_succeeded(response)
+database = Database()
 
 def get_credentials():
     pennsieve_env = os.environ['PENNSIEVE_ENV']
     ssm = boto3.client('ssm')
-    return {"host": ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-host', WithDecryption=True)['Parameter']['Value'], 
-            "database": ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-db', WithDecryption=True)['Parameter']['Value'], 
-            "user": ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-user', WithDecryption=True)['Parameter']['Value'],
-            "password": ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-password', WithDecryption=True)['Parameter']['Value']}
+    return ConnectionParameters(host = ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-host', WithDecryption=True)['Parameter']['Value'],
+                                database = ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-db', WithDecryption=True)['Parameter']['Value'],
+                                username = ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-user', WithDecryption=True)['Parameter']['Value'],
+                                password = ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-password', WithDecryption=True)['Parameter']['Value'])
 
-def connect():
-    creds = get_credentials()
-    log.info(f"connect() host: {creds['host']} database: {creds['database']} user: {creds['user']} password: {creds['password']}")
-    try:
-        conn = psycopg2.connect("dbname='"+creds['database'] + "' user='"+creds['user'] + "' password='"+creds['password']+"'" + "host='"+creds['host'] + "'")
-        log.info(f"Connected to database {creds['database']} on {creds['host']}")
-    except psycopg2.errors.OperationalError as e:
-        log.error(f"Database connection error: {e} - {e.diag.severity} - {e.diag.message_primary}")
-        raise e
-    return conn
+def column_list(columns):
+    return ",".join(columns)
 
-def lookup_user(predicate):
-    conn = connect()
-    query = f"SELECT * FROM pennsieve.users WHERE {predicate}"
-    log.info(f"lookup_user() query: {query}")
-    cur = conn.cursor()
-    cur.execute(query)
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-    log.info(f"lookup_user() found {len(rows)} user(s)")
-    log.info(f"lookup_user() rows:")
+def type_columns(T):
+    return column_list(T._fields)
+
+def value_list(values):
+    string = ""
+    sep = ""
+    for item in values:
+        if type(item) == str:
+            string = f"{string}{sep}'{item}'"
+        if type(item) == int:
+            string = f"{string}{sep}{item}"
+        if type(item) == type(None):
+            string = f"{string}{sep}null"
+        sep = ","
+    return string
+
+def lookup_pennsieve_user(predicate):
+    query = f"SELECT {type_columns(User)} FROM pennsieve.users WHERE {predicate}"
+    log.info(f"lookup_pennsieve_user() query: {query}")
+    rows = database.select(query)
+    log.info(f"lookup_pennsieve_user() found {len(rows)} row(s)")
     log.info(rows)
     if len(rows) > 0:
         return [User(*row) for row in rows]
     else:
         return None
 
-def link_orcid(user_pool_id, provider_id):
+def lookup_pennsieve_organization(slug):
+    query = f"SELECT {type_columns(Organization)} FROM pennsieve.organizations WHERE slug='{slug}'"
+    log.info(f"lookup_pennsieve_organization() query: {query}")
+    rows = database.select(query)
+    log.info(f"lookup_pennsieve_organization() found {len(rows)} row(s)")
+    log.info(rows)
+    if len(rows) > 0:
+        return Organization(*rows[0])
+    else:
+        return None
+
+def add_pennsieve_user_to_organization(user, organization, permission_bit=default_permission_bit):
+    statement = f"INSERT INTO pennsieve.organization_user(organization_id, user_id, permission_bit) VALUES({organization.id}, {user.id}, {permission_bit}) RETURNING {type_columns(OrganizationUser)}"
+    log.info(f"add_pennsieve_user_to_organization() statement: {statement}")
+    rows = database.insert(statement)
+    log.info(f"add_pennsieve_user_to_organization() insert returned {len(rows)} row(s)")
+    log.info(rows)
+    if len(rows) > 0:
+        return OrganizationUser(*rows[0])
+    else:
+        return None
+
+def create_pennsieve_user(email, cognito_id, preferred_org_id):
+    node_id = f"N:user:{uuid.uuid4()}"
+    color = "#F45D01"
+
+    user_insert_columns = [ "email",
+                            "first_name",
+                            "last_name",
+                            "credential",
+                            "color",
+                            "url",
+                            "authy_id",
+                            "is_super_admin",
+                            "preferred_org_id",
+                            "status",
+                            "node_id",
+                            "middle_initial",
+                            "degree",
+                            "cognito_id",
+                            "is_integration_user" ]
+    user_insert_values = [  email,
+                            "orcid",
+                            "login",
+                            "",
+                            color,
+                            "",
+                            0,
+                            "f",
+                            preferred_org_id,
+                            "t",
+                            node_id,
+                            "",
+                            None,
+                            cognito_id,
+                            "f" ]
+    
+    statement = f"INSERT INTO pennsieve.users({column_list(user_insert_columns)}) VALUES({value_list(user_insert_values)}) RETURNING *"
+    log.info(f"create_pennsieve_user() statement: {statement}")
+    
+    rows = database.insert(statement)
+    log.info(f"create_pennsieve_user() insert returned {len(rows)} row(s)")
+    log.info(rows)
+    if len(rows) > 0:
+        return User(*rows[0])
+    else:
+        return None
+
+def random_password():
+    def random_number():
+        return random.SystemRandom().choice(string.digits)
+    
+    def random_lowercase():
+        return random.SystemRandom().choice(string.ascii_lowercase)
+    
+    def random_uppercase():
+        return random.SystemRandom().choice(string.ascii_uppercase)
+    
+    def random_punctuation():
+        return random.SystemRandom().choice(".,+-/=:!%^")
+    
+    def random_prefix():
+        return f"{random_number()}{random_lowercase()}{random_punctuation()}{random_uppercase()}"
+    
+    def random_string(N):
+        C = string.ascii_uppercase + string.ascii_lowercase + string.digits
+        return ''.join(random.SystemRandom().choice(C) for _ in range(N))
+    
+    def random_uuid():
+        return str(uuid.uuid4())
+    
+    return f"{random_uuid()}{random_uppercase()}"
+
+def create_cognito_user(cognito_admin, email):
+    # create Cognito User
+    response = cognito_admin.create_user(email, temp_password = random_password())
+    log.info(f"cognito_admin.create_user() response: {response}")
+    if not CognitoAdmin.action_succeeded(response):
+        return None
+    cognito_id = response['User']['Username']
+    
+    # confirm sign-up
+    #response = cognito_admin.confirm_sign_up(cognito_id)
+    #log.info(f"cognito_admin.confirm_sign_up() response: {response}")
+    #if not CognitoAdmin.action_succeeded(response):
+    #    log.warn(f"cognito_admin.confirm_sign_up() was not successful")
+    
+    # return the Cognito Id of the newly created user
+    return cognito_id
+    
+def create_new_user(cognito_admin, email):
+    cognito_id = create_cognito_user(cognito_admin, email)
+    if cognito_id is None:
+        return None
+    
+    # lookup default organization
+    organization = lookup_pennsieve_organization(default_organization_slug)
+    if organization is None:
+        log.error(f"create_new_user() failed to lookup organization: {default_organization_slug}")
+        return None
+    
+    # create Pennsieve.User
+    user = create_pennsieve_user(email, cognito_id, organization.id)
+
+    # add Pennsieve.User to organization
+    if user is None:
+        log.error(f"create_new_user() failed to create Pennsieve.User")
+        return None
+        
+    # add user to organization
+    org_user = add_pennsieve_user_to_organization(user, organization)
+
+    # return the Pennsieve.User
+    log.info(f"create_new_user() created user with id: {user.id} cognito_id: {user.cognito_id} email: {user.email}")
+    return user
+    
+def link_orcid_to_cognito(cognito_admin, orcid_id, cognito_id):
+    log.info(f"link_orcid_to_cognito() orcid_id: {orcid_id} -> cognito_id: {cognito_id}")
+    link_result = cognito_admin.link_provider_for_user(cognito_id, "ORCID", "user_id", orcid_id) 
+    update_result = cognito_admin.update_user_attributes(cognito_id, "custom:orcid", orcid_id)
+    return CognitoAdmin.action_succeeded(link_result)
+
+def link_orcid_identity(cognito_admin, provider_id):
     # function to select the correct Pennsieve user returned from the database query
     def select_user(user_list):
         # for now, return the first one on the list
         return user_list[0]
     
+    def synthesize_email(orcid_id):
+        return f"orcid+{orcid_id}@{bogus_email_domain}"
+    
     # uppercase the orcid_id (seems AWS event lowercases alpha characters)
     orcid_id = provider_id.upper()
+    log.info(f"link_orcid_identity() orcid_id: {orcid_id}")
     
-    log.info(f"link_orcid() orcid_id: {orcid_id}")
+    # Use ORCID iD to lookup user in Pennsieve database. If no user has linked this ORCID iD to
+    # their Pennsieve account, then create a new user (thus permitting sign-up with ORCID iD).
     query_predicate = "orcid_authorization @> " + "'{" + "\"orcid\" : " + "\"" + orcid_id + "\"" + "}'"
-    user_list = lookup_user(query_predicate)
+    user_list = lookup_pennsieve_user(query_predicate)
     if user_list is not None:
         user = select_user(user_list)
-        link_result = admin_link_provider_for_user(user_pool_id, user.cognito_id, "ORCID", "user_id", orcid_id) 
-        update_result = admin_update_user_attributes(user_pool_id, user.cognito_id, "custom:orcid", orcid_id)
-        return link_result
     else:
-        log.info(f"link_orcid() no Pennsieve user was found with orcid_id: {orcid_id}")
-        raise ValueError(f"There is no Pennsieve user linked to ORCID Id {orcid_id}")
+        user = create_new_user(cognito_admin, synthesize_email(orcid_id))
+    
+    # Link the Cognito user to the ORCID identity. This will return the Cognito identity as the logged
+    # in user, authenticated with ORCID iD credentials.
+    if user is not None:
+        return link_orcid_to_cognito(cognito_admin, orcid_id, user.cognito_id)
+    else:
+        # TODO: might want to raise an exception here
+        log.error("something failed in new user creation and linking to external identity")
         return False
 
-def link_external(event):
+def link_external_identity(event):
     user_pool_id = event['userPoolId']
-    provider_name = event['userName'].split("_")[0]
-    provider_id = event['userName'][len(provider_name)+1:].upper()
-    if provider_name == "orcid":
-        return link_orcid(user_pool_id, provider_id)
+    cognito_admin = CognitoAdmin(user_pool_id)
+    
+    provider_name = event['userName'].split("_")[0].upper()
+    provider_id = event['userName'][len(provider_name)+1:]
+    if provider_name == "ORCID":
+        return link_orcid_identity(cognito_admin, provider_id)
     else:
         log.info(f"link_external() provider {provider_name} is not supported at this time")
         return False
@@ -142,7 +291,9 @@ def link_external(event):
 def process_event(event):
     trigger_source = event['triggerSource']
     if trigger_source == "PreSignUp_ExternalProvider":
-        event["response"]["autoConfirmUser"] = event["response"]["autoVerifyPhone"] = event["response"]["autoVerifyEmail"] = link_external(event)
+        database.connect(get_credentials())
+        event["response"]["autoConfirmUser"] = event["response"]["autoVerifyPhone"] = event["response"]["autoVerifyEmail"] = link_external_identity(event)
+        database.disconnect()
     else:
         log.info(f"process_event() trigger_source {trigger_source} will not be processed (not applicable in this context)")
     return event

@@ -17,6 +17,12 @@ variable "pennsieve_postgres_db" {
   default = "pennsieve_postgres"
 }
 
+variable "orcid_client_id" {}
+
+variable "orcid_client_secret" {}
+
+variable "orcid_oidc_issuer" {}
+
 locals {
   pennsieve_app_url = "https://app.${var.domain_name}"
 }
