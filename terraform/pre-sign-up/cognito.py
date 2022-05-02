@@ -59,12 +59,12 @@ class CognitoAdmin:
         )
         return response
 
-    def set_user_password(self, username, password):
+    def set_user_password(self, username, password, permanent=True):
         response = self.__client.admin_set_user_password(
             UserPoolId=self.__user_pool_id,
             Username=username,
             Password=password,
-            Permanent=True
+            Permanent=permanent
         )
         return response
     
