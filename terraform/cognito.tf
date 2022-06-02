@@ -227,8 +227,8 @@ resource "aws_cognito_user_pool_client" "cognito_user_pool_client_2" {
     "ALLOW_REFRESH_TOKEN_AUTH"
   ]
   
-  callback_urls = flatten(["${local.pennsieve_app_url}", "${var.sparc_portal_redirect}", "${var.environment_name}" == "dev" ? ["http://localhost:3000", "${var.sparc_portal_heroku_redirect}"] : []])
-  logout_urls = flatten(["${local.pennsieve_app_url}", "${var.sparc_portal_redirect}", "${var.environment_name}" == "dev" ? ["http://localhost:3000", "${var.sparc_portal_heroku_redirect}"] : []])
+  callback_urls = flatten(["${local.pennsieve_app_url}", "${var.sparc_portal_urls}", "${var.environment_name}" == "dev" ? ["http://localhost:3000"] : []])
+  logout_urls   = flatten(["${local.pennsieve_app_url}", "${var.sparc_portal_urls}", "${var.environment_name}" == "dev" ? ["http://localhost:3000"] : []])
 
   
   allowed_oauth_flows_user_pool_client = true
