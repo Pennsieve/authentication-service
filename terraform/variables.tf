@@ -23,9 +23,7 @@ variable "orcid_client_secret" {}
 
 variable "orcid_oidc_issuer" {}
 
-variable "sparc_portal_redirect" {}
-
-variable "sparc_portal_heroku_redirect" {}
+variable "sparc_portal_urls" {}
 
 locals {
   pennsieve_app_url = "https://app.${var.domain_name}"
