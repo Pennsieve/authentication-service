@@ -1,9 +1,38 @@
+data "aws_iam_policy_document" "sns-policy" {
+  statement {
+    actions = [
+      "SNS:AddPermission",
+      "SNS:Publish",
+      "SNS:Receive",
+      "SNS:RemovePermission",
+      "SNS:Subscribe",
+    ]
+
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+  }
+}
+
+resource "aws_iam_role" "sns_role" {
+  name               = "sns_role"
+  assume_role_policy = data.aws_iam_policy_document.sns-policy.json
+}
+
 resource "aws_cognito_user_pool" "cognito_user_pool" {
   name = "${var.environment_name}-users-${data.terraform_remote_state.region.outputs.aws_region_shortname}"
 
   auto_verified_attributes = ["email"]
   mfa_configuration        = "OPTIONAL"
   username_attributes      = ["email"]
+
+  sms_configuration {
+    external_id    = "Pennsieve"
+    sns_caller_arn = aws_iam_role.sns_role.arn
+  }
 
   email_configuration {
     email_sending_account  = "DEVELOPER"
