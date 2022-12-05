@@ -58,7 +58,7 @@ def handle_admin_create_user(event):
         setup_url = "https://app.{}/invitation/verify".format(os.environ.get("PENNSIEVE_DOMAIN"))
 
     if "clientMetadata" in event["request"] and "customMessage" in event["request"]["clientMetadata"]:
-        customMessage = event["request"]["clientMetadata"]
+        customMessage = event["request"]["clientMetadata"]["customMessage"]
     else:
         customMessage = ""
 
