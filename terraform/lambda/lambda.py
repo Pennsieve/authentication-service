@@ -57,12 +57,18 @@ def handle_admin_create_user(event):
     if event["request"]["userAttributes"]["custom:invite_path"] == "self-service":
         setup_url = "https://app.{}/invitation/verify".format(os.environ.get("PENNSIEVE_DOMAIN"))
 
+    if "clientMetadata" in event["request"] and "customMessage" in event["request"]["clientMetadata"]:
+        customMessage = event["request"]["clientMetadata"]["customMessage"]
+    else:
+        customMessage = ""
+
     template = Template(file_contents)
     email_message = template.substitute({
         'code': code,
         'username': username,
         'setup_url': setup_url,
-        'domain': os.environ.get("PENNSIEVE_DOMAIN")
+        'domain': os.environ.get("PENNSIEVE_DOMAIN"),
+        'customMessage': customMessage
     })
 
     sms_message_template = Template(
