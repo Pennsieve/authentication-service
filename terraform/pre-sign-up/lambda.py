@@ -55,7 +55,7 @@ organization_user_columns = ["organization_id",
 
 OrganizationUser = namedtuple("OrganizationUser", organization_user_columns)
 
-default_organization_slug = "__sandbox__"
+default_organization_slug = "welcome_to_pennsieve"
 default_permission_bit = 4
 
 bogus_email_domain = "pennsieve-nonexistent.email"
