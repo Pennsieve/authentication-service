@@ -53,8 +53,10 @@ def handle_admin_create_user(event):
     code = event["request"]["codeParameter"]
     username = event["userName"]
 
+    invite_path = event["request"]["userAttributes"]["custom:invite_path"]
+
     setup_url = "https://app.{}/invitation/accept".format(os.environ.get("PENNSIEVE_DOMAIN"))
-    if event["request"]["userAttributes"]["custom:invite_path"] == "self-service":
+    if invite_path == "self-service":
         setup_url = "https://app.{}/invitation/verify".format(os.environ.get("PENNSIEVE_DOMAIN"))
 
     if "clientMetadata" in event["request"] and "customMessage" in event["request"]["clientMetadata"]:
@@ -71,6 +73,10 @@ def handle_admin_create_user(event):
         'customMessage': customMessage
     })
 
+    email_subject = "Welcome to Pennsieve - setup your account"
+    if invite_path == "invite-external":
+        email_subject = "You have been invited to collaborate on Pennsieve"
+
     sms_message_template = Template(
         "Please visit ${setup_url}/${username}/${code}"
     )
@@ -81,7 +87,7 @@ def handle_admin_create_user(event):
     })
 
     event["response"]["smsMessage"] = sms_message
-    event["response"]["emailSubject"] = "Welcome to Pennsieve - setup your account"
+    event["response"]["emailSubject"] = email_subject
     event["response"]["emailMessage"] = email_message
 
     return event
