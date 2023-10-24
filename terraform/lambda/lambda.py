@@ -55,6 +55,11 @@ def handle_admin_create_user(event):
 
     invite_path = event["request"]["userAttributes"]["custom:invite_path"]
 
+    # when a user...
+    # - performs a self-service sign up, the App URL to complete sign up is /invitation/verify
+    # - is invited to an organization, the App URL to complete sign up is /invitation/accept
+    # - is invited to a dataset (workspace guest), the App URL to complete sign up is /invitation/complete
+
     setup_url = "https://app.{}/invitation/accept".format(os.environ.get("PENNSIEVE_DOMAIN"))
     if invite_path == "self-service":
         setup_url = "https://app.{}/invitation/verify".format(os.environ.get("PENNSIEVE_DOMAIN"))
