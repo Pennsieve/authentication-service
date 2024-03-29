@@ -274,7 +274,7 @@ resource "aws_cognito_user_pool" "cognito_token_pool" {
   }
 
   password_policy {
-    temporary_password_validity_days = 0
+    temporary_password_validity_days = 7
     minimum_length                   = 36
     require_lowercase                = false
     require_numbers                  = false
