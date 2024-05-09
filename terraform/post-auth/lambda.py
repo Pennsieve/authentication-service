@@ -6,27 +6,12 @@ import psycopg2
 import psycopg2.extras
 import boto3
 
-user_columns = ["id",
-                "email",
-                "first_name",
-                "last_name",
-                "credential",
-                "color",
-                "url",
-                "authy_id",
-                "is_super_admin",
-                "preferred_org_id",
-                "status",
-                "updated_at",
-                "created_at",
-                "node_id",
-                "orcid_authorization",
-                "middle_initial",
-                "degree",
-                "cognito_id",
-                "is_integration_user"]
+user_columns = ["email",
+                "cognito_id"]
 
 User = namedtuple("User", user_columns)
+
+lookup_user_select_columns = ','.join(user_columns)
 
 def logging_level(env_var = "LOGGING_LEVEL"):
     try:
@@ -40,8 +25,8 @@ log.setLevel(logging_level())
 def get_credentials():
     pennsieve_env = os.environ['PENNSIEVE_ENV']
     ssm = boto3.client('ssm')
-    return {"host": ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-host', WithDecryption=True)['Parameter']['Value'], 
-            "database": ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-db', WithDecryption=True)['Parameter']['Value'], 
+    return {"host": ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-host', WithDecryption=True)['Parameter']['Value'],
+            "database": ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-db', WithDecryption=True)['Parameter']['Value'],
             "user": ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-user', WithDecryption=True)['Parameter']['Value'],
             "password": ssm.get_parameter(Name=f'/{pennsieve_env}/authentication-service/postgres-password', WithDecryption=True)['Parameter']['Value']}
 
@@ -68,7 +53,7 @@ def update_user(conn, email, cognito_id):
     return count
 
 def lookup_user(conn, email):
-    query = f"SELECT * FROM pennsieve.users WHERE email='{email}'"
+    query = f"SELECT {lookup_user_select_columns} FROM pennsieve.users WHERE email='{email}'"
     log.info(f"lookup_user() query: {query}")
     cur = conn.cursor()
     cur.execute(query)
@@ -100,7 +85,7 @@ def process_event(event):
             log.info(f"process_event() user is up-to-date: {user.email} / {user.cognito_id}")
     else:
         log.warn(f"process_event() user not found: {email}")
-    
+
     conn.close()
     return
 
