@@ -27,10 +27,6 @@ resource "aws_cognito_user_pool" "cognito_user_pool" {
     allow_admin_create_user_only = true
   }
 
-  device_configuration {
-    device_only_remembered_on_user_prompt = true
-  }
-
   software_token_mfa_configuration {
     enabled = true
   }
@@ -161,10 +157,6 @@ resource "aws_cognito_user_pool" "cognito_user_pool_2" {
     allow_admin_create_user_only = true
   }
 
-  device_configuration {
-    device_only_remembered_on_user_prompt = true
-  }
-
   software_token_mfa_configuration {
     enabled = true
   }
@@ -267,10 +259,6 @@ resource "aws_cognito_user_pool" "cognito_token_pool" {
 
   admin_create_user_config {
     allow_admin_create_user_only = true
-  }
-
-  device_configuration {
-    device_only_remembered_on_user_prompt = true
   }
 
   password_policy {
