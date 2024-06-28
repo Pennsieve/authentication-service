@@ -18,15 +18,11 @@ user_columns = ["id",
 
 User = namedtuple("User", user_columns)
 
-lookup_user_select_columns = ','.join(user_columns)
-
 organization_columns = ["id",
                         "name",
                         "slug"]
 
 Organization = namedtuple("Organization", organization_columns)
-
-lookup_organization_select_columns = ','.join(organization_columns)
 
 organization_user_columns = ["organization_id", 
                              "user_id", 
@@ -72,7 +68,7 @@ def value_list(values):
     return string
 
 def lookup_pennsieve_user(predicate):
-    query = f"SELECT {lookup_user_select_columns} FROM pennsieve.users WHERE {predicate}"
+    query = f"SELECT {type_columns(User)} FROM pennsieve.users WHERE {predicate}"
     log.info(f"lookup_pennsieve_user() query: {query}")
     rows = database.select(query)
     log.info(f"lookup_pennsieve_user() found {len(rows)} row(s)")
@@ -83,7 +79,7 @@ def lookup_pennsieve_user(predicate):
         return None
 
 def lookup_pennsieve_organization(slug):
-    query = f"SELECT {lookup_organization_select_columns} FROM pennsieve.organizations WHERE slug='{slug}'"
+    query = f"SELECT {type_columns(Organization)} FROM pennsieve.organizations WHERE slug='{slug}'"
     log.info(f"lookup_pennsieve_organization() query: {query}")
     rows = database.select(query)
     log.info(f"lookup_pennsieve_organization() found {len(rows)} row(s)")
@@ -139,7 +135,7 @@ def create_pennsieve_user(email, cognito_id, preferred_org_id):
                             cognito_id,
                             "f" ]
     
-    statement = f"INSERT INTO pennsieve.users({column_list(user_insert_columns)}) VALUES({value_list(user_insert_values)}) RETURNING {lookup_user_select_columns}"
+    statement = f"INSERT INTO pennsieve.users({column_list(user_insert_columns)}) VALUES({value_list(user_insert_values)}) RETURNING {type_columns(User)}"
     log.info(f"create_pennsieve_user() statement: {statement}")
     
     rows = database.insert(statement)
