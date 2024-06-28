@@ -14,40 +14,19 @@ from database import ConnectionParameters, Database
 
 user_columns = ["id",
                 "email",
-                "first_name",
-                "last_name",
-                "credential",
-                "color",
-                "url",
-                "authy_id",
-                "is_super_admin",
-                "preferred_org_id",
-                "status",
-                "updated_at",
-                "created_at",
-                "node_id",
-                "orcid_authorization",
-                "middle_initial",
-                "degree",
-                "cognito_id",
-                "is_integration_user"]
+                "cognito_id"]
 
 User = namedtuple("User", user_columns)
 
+lookup_user_select_columns = ','.join(user_columns)
+
 organization_columns = ["id",
                         "name",
-                        "slug",
-                        "encryption_key_id",
-                        "terms",
-                        "status",
-                        "updated_at",
-                        "created_at",
-                        "node_id",
-                        "custom_terms_of_service_version",
-                        "size",
-                        "storage_bucket"]
+                        "slug"]
 
 Organization = namedtuple("Organization", organization_columns)
+
+lookup_organization_select_columns = ','.join(organization_columns)
 
 organization_user_columns = ["organization_id", 
                              "user_id", 
@@ -93,7 +72,7 @@ def value_list(values):
     return string
 
 def lookup_pennsieve_user(predicate):
-    query = f"SELECT {type_columns(User)} FROM pennsieve.users WHERE {predicate}"
+    query = f"SELECT {lookup_user_select_columns} FROM pennsieve.users WHERE {predicate}"
     log.info(f"lookup_pennsieve_user() query: {query}")
     rows = database.select(query)
     log.info(f"lookup_pennsieve_user() found {len(rows)} row(s)")
@@ -104,7 +83,7 @@ def lookup_pennsieve_user(predicate):
         return None
 
 def lookup_pennsieve_organization(slug):
-    query = f"SELECT {type_columns(Organization)} FROM pennsieve.organizations WHERE slug='{slug}'"
+    query = f"SELECT {lookup_organization_select_columns} FROM pennsieve.organizations WHERE slug='{slug}'"
     log.info(f"lookup_pennsieve_organization() query: {query}")
     rows = database.select(query)
     log.info(f"lookup_pennsieve_organization() found {len(rows)} row(s)")
