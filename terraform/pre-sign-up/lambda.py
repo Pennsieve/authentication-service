@@ -139,7 +139,7 @@ def create_pennsieve_user(email, cognito_id, preferred_org_id):
                             cognito_id,
                             "f" ]
     
-    statement = f"INSERT INTO pennsieve.users({column_list(user_insert_columns)}) VALUES({value_list(user_insert_values)}) RETURNING *"
+    statement = f"INSERT INTO pennsieve.users({column_list(user_insert_columns)}) VALUES({value_list(user_insert_values)}) RETURNING {lookup_user_select_columns}"
     log.info(f"create_pennsieve_user() statement: {statement}")
     
     rows = database.insert(statement)
