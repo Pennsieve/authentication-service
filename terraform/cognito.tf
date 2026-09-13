@@ -136,11 +136,18 @@ resource "aws_cognito_user_pool" "cognito_user_pool_2" {
   mfa_configuration        = "OPTIONAL"
   username_attributes      = ["email"]
 
+  # Turned on by hand in prod; the pool holds every platform user.
+  deletion_protection = "ACTIVE"
+
+  # prod sends as support@pennsieve.io through an SES configuration set (set
+  # by hand, 2023); dev sends from the region's mail-from address. Both come
+  # from the leaf now instead of from a console edit.
   email_configuration {
     email_sending_account  = "DEVELOPER"
     source_arn             = data.terraform_remote_state.region.outputs.ses_domain_identity_arn
-    from_email_address     = data.terraform_remote_state.region.outputs.ses_mail_from_email_address
+    from_email_address     = coalesce(var.cognito_from_email_address, data.terraform_remote_state.region.outputs.ses_mail_from_email_address)
     reply_to_email_address = data.terraform_remote_state.region.outputs.ses_reply_to_email_address
+    configuration_set      = var.ses_configuration_set
   }
 
   # user_migration and post_authentication were detached from the live pools
@@ -163,9 +170,8 @@ resource "aws_cognito_user_pool" "cognito_user_pool_2" {
     allow_admin_create_user_only = true
   }
 
-  device_configuration {
-    device_only_remembered_on_user_prompt = true
-  }
+  # No device_configuration: prod's pool has device tracking off (removed by
+  # hand; remove_device_config, 2022, meant the same). dev follows.
 
   software_token_mfa_configuration {
     enabled = true
@@ -216,6 +222,8 @@ resource "aws_cognito_identity_provider" "orcid_identity_provider" {
     client_id = "${var.orcid_client_id}"
     client_secret = "${var.orcid_client_secret}"
     oidc_issuer = "${var.orcid_oidc_issuer}"
+    # set live in dev and prod; without it every apply wants to drop it
+    attributes_url_add_attributes = "false"
   }
 }
 
