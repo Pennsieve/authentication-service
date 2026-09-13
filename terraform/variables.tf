@@ -27,6 +27,7 @@ variable "sparc_portal_urls" {}
 
 locals {
   pennsieve_app_url = "https://app.${var.domain_name}"
+  pennsieve_discover_url = "https://discover.${var.domain_name}"
   domain_name = data.terraform_remote_state.account.outputs.domain_name
   hosted_zone = data.terraform_remote_state.account.outputs.public_hosted_zone_id
 

@@ -143,11 +143,13 @@ resource "aws_cognito_user_pool" "cognito_user_pool_2" {
     reply_to_email_address = data.terraform_remote_state.region.outputs.ses_reply_to_email_address
   }
 
+  # user_migration and post_authentication were detached from the live pools
+  # (dev and prod) once the users2 migration was done; both Lambdas have had
+  # no invocations since. The code said otherwise, and a plain apply on
+  # 2026-09-13 re-attached them in dev. This matches what runs.
   lambda_config {
     custom_message = aws_lambda_function.cognito_custom_message_lambda.arn
-    user_migration = aws_lambda_function.cognito_users2_migration_lambda.arn
-    post_authentication = aws_lambda_function.cognito_post_authentication_lambda.arn
-    pre_sign_up = aws_lambda_function.cognito_pre_sign_up_lambda.arn
+    pre_sign_up    = aws_lambda_function.cognito_pre_sign_up_lambda.arn
   }
 
   account_recovery_setting {
@@ -227,8 +229,8 @@ resource "aws_cognito_user_pool_client" "cognito_user_pool_client_2" {
     "ALLOW_REFRESH_TOKEN_AUTH"
   ]
   
-  callback_urls = flatten(["${local.pennsieve_app_url}", "${var.sparc_portal_urls}", "${var.environment_name}" == "dev" ? ["http://localhost:3000"] : []])
-  logout_urls   = flatten(["${local.pennsieve_app_url}", "${var.sparc_portal_urls}", "${var.environment_name}" == "dev" ? ["http://localhost:3000"] : []])
+  callback_urls = flatten(["${local.pennsieve_discover_url}", "${local.pennsieve_app_url}", "${var.sparc_portal_urls}", "${var.environment_name}" == "dev" ? ["http://localhost:3000"] : []])
+  logout_urls   = flatten(["${local.pennsieve_discover_url}", "${local.pennsieve_app_url}", "${var.sparc_portal_urls}", "${var.environment_name}" == "dev" ? ["http://localhost:3000"] : []])
 
   
   allowed_oauth_flows_user_pool_client = true
