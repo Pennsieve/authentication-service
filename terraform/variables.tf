@@ -25,6 +25,18 @@ variable "orcid_oidc_issuer" {}
 
 variable "sparc_portal_urls" {}
 
+# Cognito sender for the users2 pool. null = the region's SES mail-from
+# address (dev); prod sets support@pennsieve.io + its SES configuration set.
+variable "cognito_from_email_address" {
+  type    = string
+  default = null
+}
+
+variable "ses_configuration_set" {
+  type    = string
+  default = null
+}
+
 locals {
   pennsieve_app_url = "https://app.${var.domain_name}"
   pennsieve_discover_url = "https://discover.${var.domain_name}"
